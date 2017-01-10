@@ -2,6 +2,7 @@
 #include<math.h>
 #include<stdio.h>
 #include<string.h>
+#include<malloc.h>
 
 extern "C" {
 //#ifdef BIT64
@@ -101,17 +102,71 @@ void newGame(double &time, mario_t &mario)
 	mario.pos.x = 2;
 }
 
-void jump(mario_t &mario)
+level_t load_map(FILE *file)
 {
-	for (int i = 0; i < 5; i++)
+	level_t level;
+	fscanf(file, "%d", &level.w);
+	fscanf(file, "%d", &level.h);
+	//create matrix
+	level.map = (element_t **)malloc(level.h*level.w * sizeof(element_t));
+	if (level.map == NULL)
 	{
-		mario.pos.y -= i;
+		printf("Blad przyznania pamieci 1\n");
+		level.error = 1;
+		return level;
+	}
+	for (int i = 0; i<level.h; i++)
+	{
+		level.map[i] = (element_t *)malloc(level.w * sizeof(element_t));
+		if (level.map[i] == NULL)
+		{
+			printf("Blad przyznania pamieci 2\n");
+			level.error = 1;
+			return level;
+		}
 	}
 
-	/*for (int i = 0; i < 5; i++)
+	while (!feof(file))
 	{
-		mario.pos.y += i;
-	}*/
+		for (int i = 0; i < level.h; i++)
+		{
+			for (int j = 0; j < level.w; j++)
+			{
+				fscanf(file, "%d", &level.map[i][j]);
+			}
+		}
+	}
+	return level;
+}
+
+void load_level(SDL_Surface *screen, level_t level, mario_t mario, block_t block)
+{
+	int start_y = SCREEN_HEIGHT - (level.h * block.ground.h);
+
+	for (int i = 0; i < level.h; i++)
+	{
+		int start_x = 1;
+		for (int j = 0; j < level.w; j++)
+		{
+			switch (level.map[i][j])
+			{
+			case NOTHING:
+
+				break;
+			case MARIO:
+				DrawElement(screen, mario.pos.x, mario.pos.y, mario.stand_l, mario.sprite);
+				break;
+			case GROUND:
+				DrawElement(screen, start_x, start_y, block.ground, block.sprite);
+				break;
+			case PLATFORM:
+				DrawElement(screen, start_x, start_y, block.platform, block.sprite);
+				break;
+			}
+			start_x += block.ground.w;
+		}
+		start_y += block.ground.h;
+	}
 }
 
 
@@ -124,15 +179,13 @@ int main(int argc, char **argv) {
 	double delta, worldTime, fpsTimer, fps, distance;
 	SDL_Event event;
 	SDL_Surface *screen, *charset;
-	SDL_Surface  *blocks_sprite, *mario_sheet;
 	SDL_Texture *scrtex;
 	SDL_Window *window;
 	SDL_Renderer *renderer;
-	element_t blocks;
+	block_t block;
 	mario_t mario;
+
 	int start_jump = 0, end_jump = 0;
-	mario.pos.y = SCREEN_HEIGHT - blocks.ground.h - mario.stand_l.h;
-	mario.pos.x = 2;
 	mario.curr_frame = &mario.stand_r;
 
 
@@ -183,9 +236,9 @@ int main(int argc, char **argv) {
 		};
 	SDL_SetColorKey(charset, true, 0x000000);
 
-	blocks_sprite = SDL_LoadBMP("./blocks_sprite.bmp");
-	if (blocks_sprite == NULL) {
-		printf("SDL_LoadBMP(blocks_sprite.bmp) error: %s\n", SDL_GetError());
+	block.sprite = SDL_LoadBMP("./block_sprite.bmp");
+	if (block.sprite== NULL) {
+		printf("SDL_LoadBMP(block_sprite.bmp) error: %s\n", SDL_GetError());
 		SDL_FreeSurface(screen);
 		SDL_DestroyTexture(scrtex);
 		SDL_DestroyWindow(window);
@@ -194,8 +247,8 @@ int main(int argc, char **argv) {
 		return 1;
 	};
 
-	mario_sheet = SDL_LoadBMP("./mario_sheet.bmp");
-	if (blocks_sprite == NULL) {
+	mario.sprite = SDL_LoadBMP("./mario_sheet.bmp");
+	if (mario.sprite == NULL) {
 		printf("SDL_LoadBMP(mario_sheet.bmp) error: %s\n", SDL_GetError());
 		SDL_FreeSurface(screen);
 		SDL_DestroyTexture(scrtex);
@@ -244,6 +297,29 @@ int main(int argc, char **argv) {
 	worldTime = 0;
 	distance = 0;
 
+	//mapa
+	level_t level;
+	FILE *file = fopen("map1.map", "r");
+	level = load_map(file);
+	if (level.error == 1)
+	{
+		return 0;
+	}
+
+	//mario start position
+	for (int i = 0; i < level.h; i++)
+	{
+		for (int j = 0; j < level.w; j++)
+		{
+			if (level.map[i][j] == MARIO)
+			{
+				mario.pos.x = j*block.ground.w + 1;
+				mario.pos.y = SCREEN_HEIGHT - (level.h - i)*block.ground.h;
+				break;
+			}
+		}
+	}
+	
 
 	//rysowanie
 	while(!quit) {
@@ -284,18 +360,20 @@ int main(int argc, char **argv) {
 		DrawRectangle(screen, 4, 4, SCREEN_WIDTH - 8, 36, czerwony, niebieski);
 		sprintf(text, "Szablon drugiego zadania, czas trwania = %.1lf s  %.0lf klatek / s", worldTime, fps);
 		DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, 10, text, charset);
-		sprintf(text, "Esc - wyjscie, n - nowa gra");
+		sprintf(text, "Esc - wyjscie, n - nowa gra, znak - ");
 		DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, 26, text, charset);
 
-		//podloze
-		int ground_w = SCREEN_WIDTH / blocks.ground.w + 1;
-		for (int i = 0; i < ground_w; i++)
-		{
-			DrawElement(screen, i*16, SCREEN_HEIGHT-blocks.ground.w, blocks.ground, blocks_sprite);
-		}
+		////podloze
+		//int ground_w = SCREEN_WIDTH / block.ground.w + 1;
+		//for (int i = 0; i < ground_w; i++)
+		//{
+		//	DrawElement(screen, i*16, SCREEN_HEIGHT-block.ground.w, block.ground, block.sprite);
+		//}
 
-		//mario
-		DrawElement(screen, mario.pos.x, mario.pos.y, *mario.curr_frame, mario_sheet);
+		////mario
+		//DrawElement(screen, mario.pos.x, mario.pos.y, *mario.curr_frame, mario.sprite);
+
+		load_level(screen, level, mario, block);
 
 
 		SDL_UpdateTexture(scrtex, NULL, screen->pixels, screen->pitch);

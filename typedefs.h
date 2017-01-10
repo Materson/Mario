@@ -4,10 +4,21 @@
 #define MOVE_SPEED 4
 #define JUMP_HIGH 50
 #define JUMP_SPEED 4
+
+typedef enum
+{
+	NOTHING,
+	MARIO,
+	GROUND,
+	PLATFORM
+}element_t;
+
 typedef struct
 {
 	SDL_Rect ground = { 0,0,16,16 };	//x,y - location in file, width, height
-}element_t;
+	SDL_Rect platform = { 16,0,16,16 };
+	SDL_Surface *sprite;
+}block_t;
 
 typedef struct
 {
@@ -17,6 +28,7 @@ typedef struct
 
 typedef struct
 {
+	SDL_Surface *sprite;
 	SDL_Rect stand_l = { 181, 0, 13, 16 };
 	SDL_Rect stand_r = { 211, 0, 13, 16 };
 	SDL_Rect jump_l = { 29, 0, 17, 16 };
@@ -28,3 +40,11 @@ typedef struct
 	SDL_Rect go_r
 	*/
 }mario_t;
+
+typedef struct
+{
+	int w;
+	int h;
+	element_t **map;
+	int error = 0;
+}level_t;
