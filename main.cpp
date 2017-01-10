@@ -12,6 +12,7 @@ extern "C" {
 #include"./sdl/include/SDL_main.h"
 //#endif
 }
+#include"typedefs.h"
 
 #define SCREEN_WIDTH	640
 #define SCREEN_HEIGHT	480
@@ -40,6 +41,16 @@ void DrawString(SDL_Surface *screen, int x, int y, const char *text,
 		text++;
 		};
 	};
+
+void DrawElement(SDL_Surface *screen, int x, int y, SDL_Rect element, SDL_Surface *source)
+{
+	SDL_Rect d;
+	d.w = element.w;
+	d.h = element.h;
+	d.x = x;
+	d.y = y;
+	SDL_BlitSurface(source, &element, screen, &d);
+}
 
 
 // narysowanie na ekranie screen powierzchni sprite w punkcie (x, y)
@@ -85,6 +96,26 @@ void DrawRectangle(SDL_Surface *screen, int x, int y, int l, int k,
 		DrawLine(screen, x + 1, i, l - 2, 1, 0, fillColor);
 	};
 
+void newGame(double &time, mario_t &mario)
+{
+	time = 0;
+	mario.pos.y = SCREEN_HEIGHT - 16 - mario.stand_l.h;
+	mario.pos.x = 2;
+}
+
+void jump(mario_t &mario)
+{
+	for (int i = 0; i < 5; i++)
+	{
+		mario.pos.y -= i;
+	}
+
+	/*for (int i = 0; i < 5; i++)
+	{
+		mario.pos.y += i;
+	}*/
+}
+
 
 // main
 #ifdef __cplusplus
@@ -92,13 +123,20 @@ extern "C"
 #endif
 int main(int argc, char **argv) {
 	int t1, t2, quit, frames, rc;
-	double delta, worldTime, fpsTimer, fps, distance, etiSpeed;
+	double delta, worldTime, fpsTimer, fps, distance;
 	SDL_Event event;
 	SDL_Surface *screen, *charset;
-	SDL_Surface *eti;
+	SDL_Surface  *blocks_sprite, *mario_sheet;
 	SDL_Texture *scrtex;
 	SDL_Window *window;
 	SDL_Renderer *renderer;
+	element_t blocks;
+	mario_t mario;
+	int start_jump = 0, end_jump = 0;
+	mario.pos.y = SCREEN_HEIGHT - blocks.ground.h - mario.stand_l.h;
+	mario.pos.x = 2;
+	mario.curr_frame = &mario.stand_r;
+
 
 	if(SDL_Init(SDL_INIT_EVERYTHING) != 0) {
 		printf("SDL_Init error: %s\n", SDL_GetError());
@@ -106,9 +144,9 @@ int main(int argc, char **argv) {
 		}
 
 	// tryb pe³noekranowy
-//	rc = SDL_CreateWindowAndRenderer(0, 0, SDL_WINDOW_FULLSCREEN_DESKTOP,
-//	                                 &window, &renderer);
-	rc = SDL_CreateWindowAndRenderer(SCREEN_WIDTH, SCREEN_HEIGHT, 0,
+	/*rc = SDL_CreateWindowAndRenderer(0, 0, SDL_WINDOW_FULLSCREEN_DESKTOP,
+	                                 &window, &renderer);
+	*/rc = SDL_CreateWindowAndRenderer(SCREEN_WIDTH, SCREEN_HEIGHT, 0,
 	                                 &window, &renderer);
 	if(rc != 0) {
 		SDL_Quit();
@@ -147,23 +185,57 @@ int main(int argc, char **argv) {
 		};
 	SDL_SetColorKey(charset, true, 0x000000);
 
-	eti = SDL_LoadBMP("./eti.bmp");
-	if(eti == NULL) {
-		printf("SDL_LoadBMP(eti.bmp) error: %s\n", SDL_GetError());
-		SDL_FreeSurface(charset);
+	blocks_sprite = SDL_LoadBMP("./blocks_sprite.bmp");
+	if (blocks_sprite == NULL) {
+		printf("SDL_LoadBMP(blocks_sprite.bmp) error: %s\n", SDL_GetError());
 		SDL_FreeSurface(screen);
 		SDL_DestroyTexture(scrtex);
 		SDL_DestroyWindow(window);
 		SDL_DestroyRenderer(renderer);
 		SDL_Quit();
 		return 1;
-		};
+	};
+
+	mario_sheet = SDL_LoadBMP("./mario_sheet.bmp");
+	if (blocks_sprite == NULL) {
+		printf("SDL_LoadBMP(mario_sheet.bmp) error: %s\n", SDL_GetError());
+		SDL_FreeSurface(screen);
+		SDL_DestroyTexture(scrtex);
+		SDL_DestroyWindow(window);
+		SDL_DestroyRenderer(renderer);
+		SDL_Quit();
+		return 1;
+	};
+
+
+	//eti = SDL_LoadBMP("./eti.bmp");
+	//if(eti == NULL) {
+	//	printf("SDL_LoadBMP(eti.bmp) error: %s\n", SDL_GetError());
+	//	SDL_FreeSurface(charset);
+	//	SDL_FreeSurface(screen);
+	//	SDL_DestroyTexture(scrtex);
+	//	SDL_DestroyWindow(window);
+	//	SDL_DestroyRenderer(renderer);
+	//	SDL_Quit();
+	//	return 1;
+	//	};
+
+	//if (eti == NULL) {
+	//	printf("SDL_LoadBMP(misc_sprites.bmp) error: %s\n", SDL_GetError());
+	//	SDL_FreeSurface(charset);
+	//	SDL_FreeSurface(screen);
+	//	SDL_DestroyTexture(scrtex);
+	//	SDL_DestroyWindow(window);
+	//	SDL_DestroyRenderer(renderer);
+	//	SDL_Quit();
+	//	return 1;
+	//};
 
 	char text[128];
 	int czarny = SDL_MapRGB(screen->format, 0x00, 0x00, 0x00);
 	int zielony = SDL_MapRGB(screen->format, 0x00, 0xFF, 0x00);
 	int czerwony = SDL_MapRGB(screen->format, 0xFF, 0x00, 0x00);
-	int niebieski = SDL_MapRGB(screen->format, 0x11, 0x11, 0xCC);
+	int niebieski = SDL_MapRGB(screen->format, 0x5C, 0x94, 0xFC);
 
 	t1 = SDL_GetTicks();
 
@@ -173,8 +245,9 @@ int main(int argc, char **argv) {
 	quit = 0;
 	worldTime = 0;
 	distance = 0;
-	etiSpeed = 1;
 
+
+	//rysowanie
 	while(!quit) {
 		t2 = SDL_GetTicks();
 
@@ -186,13 +259,14 @@ int main(int argc, char **argv) {
 
 		worldTime += delta;
 
-		distance += etiSpeed * delta;
+		distance += 10 * delta;
 
-		SDL_FillRect(screen, NULL, czarny);
+		SDL_FillRect(screen, NULL, niebieski);
 
-		DrawSurface(screen, eti,
+		//rysuj eti
+		/*DrawSurface(screen, eti,
 		            SCREEN_WIDTH / 2 + sin(distance) * SCREEN_HEIGHT / 3,
-			    SCREEN_HEIGHT / 2 + cos(distance) * SCREEN_HEIGHT / 3);
+			    SCREEN_HEIGHT / 2 + cos(distance) * SCREEN_HEIGHT / 3);*/
 
 
 //		DrawScreen(screen, plane, ship, charset, worldTime, delta, vertSpeed);
@@ -207,12 +281,24 @@ int main(int argc, char **argv) {
 			fpsTimer -= 0.5;
 			};
 
+
 		// tekst informacyjny
 		DrawRectangle(screen, 4, 4, SCREEN_WIDTH - 8, 36, czerwony, niebieski);
 		sprintf(text, "Szablon drugiego zadania, czas trwania = %.1lf s  %.0lf klatek / s", worldTime, fps);
 		DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, 10, text, charset);
-		sprintf(text, "Esc - wyjscie, \030 - przyspieszenie, \031 - zwolnienie");
+		sprintf(text, "Esc - wyjscie, n - nowa gra");
 		DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, 26, text, charset);
+
+		//podloze
+		int ground_w = SCREEN_WIDTH / blocks.ground.w;
+		for (int i = 0; i < ground_w; i++)
+		{
+			DrawElement(screen, 1 + i*16, SCREEN_HEIGHT-blocks.ground.w, blocks.ground, blocks_sprite);
+		}
+
+		//mario
+		DrawElement(screen, mario.pos.x, mario.pos.y, *mario.curr_frame, mario_sheet);
+
 
 		SDL_UpdateTexture(scrtex, NULL, screen->pixels, screen->pitch);
 //		SDL_RenderClear(renderer);
@@ -224,17 +310,54 @@ int main(int argc, char **argv) {
 			switch(event.type) {
 				case SDL_KEYDOWN:
 					if(event.key.keysym.sym == SDLK_ESCAPE) quit = 1;
-					else if(event.key.keysym.sym == SDLK_UP) etiSpeed = 2.0;
-					else if(event.key.keysym.sym == SDLK_DOWN) etiSpeed = 0.3;
+					else if (event.key.keysym.sym == SDLK_n)
+					{
+						newGame(worldTime, mario);
+					}
+					else if (event.key.keysym.sym == SDLK_RIGHT)
+					{
+						mario.pos.x += SPEED;
+						mario.curr_frame = &mario.stand_r;
+					}
+					else if (event.key.keysym.sym == SDLK_LEFT)
+					{
+						mario.pos.x -= SPEED;
+						mario.curr_frame = &mario.stand_l;
+					}
+					else if (event.key.keysym.sym == SDLK_UP)
+					{
+						if(start_jump == 0)
+							start_jump=1;
+					}
 					break;
 				case SDL_KEYUP:
-					etiSpeed = 1.0;
 					break;
 				case SDL_QUIT:
 					quit = 1;
 					break;
 				};
 			};
+
+		int a = (worldTime * 100) / 1;
+		if (start_jump > 0 && start_jump  <= JUMP_HIGH  && !end_jump && a % 15 == 0)
+		{
+			mario.pos.y--;
+			start_jump++;
+			if(start_jump == JUMP_HIGH) end_jump = 1;
+		}
+
+		if (end_jump && a % 15 == 0)
+		{
+			start_jump--;
+			mario.pos.y++;
+			if (start_jump == 1)
+			{
+				end_jump = 0;
+				start_jump = 0;
+			}
+		}
+		
+		
 		frames++;
 		};
 
