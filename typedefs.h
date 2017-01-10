@@ -1,5 +1,6 @@
-#define SPEED 4
-#define JUMP_HIGH 20
+#define MOVE_SPEED 4
+#define JUMP_HIGH 50
+#define JUMP_SPEED 4
 typedef struct
 {
 	SDL_Rect ground = { 0,0,16,16 };	//x,y - location in file, width, height
@@ -15,10 +16,12 @@ typedef struct
 {
 	SDL_Rect stand_l = { 181, 0, 13, 16 };
 	SDL_Rect stand_r = { 211, 0, 13, 16 };
-	/*SDL_Rect go_l
-	SDL_Rect go_r
-	SDL_Rect jump_l
-	SDL_Rect jump_r*/
+	SDL_Rect jump_l = { 29, 0, 17, 16 };
+	SDL_Rect jump_r =  { 359, 0, 17, 16 };
 	SDL_Rect *curr_frame;
 	pos_t pos;
+	/*
+	SDL_Rect go_l
+	SDL_Rect go_r
+	*/
 }mario_t;

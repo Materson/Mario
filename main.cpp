@@ -316,18 +316,43 @@ int main(int argc, char **argv) {
 					}
 					else if (event.key.keysym.sym == SDLK_RIGHT)
 					{
-						mario.pos.x += SPEED;
-						mario.curr_frame = &mario.stand_r;
+						mario.pos.x += MOVE_SPEED;
+						if (start_jump == 0)
+						{
+							mario.curr_frame = &mario.stand_r;
+						}
+						else
+						{
+							mario.curr_frame = &mario.jump_r;
+						}
 					}
 					else if (event.key.keysym.sym == SDLK_LEFT)
 					{
-						mario.pos.x -= SPEED;
-						mario.curr_frame = &mario.stand_l;
+						mario.pos.x -= MOVE_SPEED;
+						if (start_jump == 0)
+						{
+							mario.curr_frame = &mario.stand_l;
+						}
+						else
+						{
+							mario.curr_frame = &mario.jump_l;
+						}
 					}
 					else if (event.key.keysym.sym == SDLK_UP)
 					{
-						if(start_jump == 0)
+						if (start_jump == 0)
+						{
 							start_jump=1;
+							if (mario.curr_frame == &mario.stand_l)
+							{
+								mario.curr_frame = &mario.jump_l;
+							}
+							else
+							{
+								mario.curr_frame = &mario.jump_r;
+							}
+
+						}
 					}
 					break;
 				case SDL_KEYUP:
@@ -339,14 +364,14 @@ int main(int argc, char **argv) {
 			};
 
 		int a = (worldTime * 100) / 1;
-		if (start_jump > 0 && start_jump  <= JUMP_HIGH  && !end_jump && a % 15 == 0)
+		if (start_jump > 0 && start_jump  <= JUMP_HIGH  && !end_jump && a % JUMP_SPEED == 0)
 		{
 			mario.pos.y--;
 			start_jump++;
 			if(start_jump == JUMP_HIGH) end_jump = 1;
 		}
 
-		if (end_jump && a % 15 == 0)
+		if (end_jump && a % JUMP_SPEED == 0)
 		{
 			start_jump--;
 			mario.pos.y++;
@@ -354,6 +379,14 @@ int main(int argc, char **argv) {
 			{
 				end_jump = 0;
 				start_jump = 0;
+				if (mario.curr_frame == &mario.jump_l)
+				{
+					mario.curr_frame = &mario.stand_l;
+				}
+				else
+				{
+					mario.curr_frame = &mario.stand_r;
+				}
 			}
 		}
 		
