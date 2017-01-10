@@ -14,8 +14,6 @@ extern "C" {
 }
 #include"typedefs.h"
 
-#define SCREEN_WIDTH	640
-#define SCREEN_HEIGHT	480
 
 
 // narysowanie napisu txt na powierzchni screen, zaczynaj¹c od punktu (x, y)
@@ -290,10 +288,10 @@ int main(int argc, char **argv) {
 		DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, 26, text, charset);
 
 		//podloze
-		int ground_w = SCREEN_WIDTH / blocks.ground.w;
+		int ground_w = SCREEN_WIDTH / blocks.ground.w + 1;
 		for (int i = 0; i < ground_w; i++)
 		{
-			DrawElement(screen, 1 + i*16, SCREEN_HEIGHT-blocks.ground.w, blocks.ground, blocks_sprite);
+			DrawElement(screen, i*16, SCREEN_HEIGHT-blocks.ground.w, blocks.ground, blocks_sprite);
 		}
 
 		//mario

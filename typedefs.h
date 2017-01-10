@@ -1,3 +1,6 @@
+#define SCREEN_WIDTH	740
+#define SCREEN_HEIGHT	480
+
 #define MOVE_SPEED 4
 #define JUMP_HIGH 50
 #define JUMP_SPEED 4
