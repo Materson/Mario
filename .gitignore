@@ -3,3 +3,4 @@ debug/
 *.png
 *vc*
 .vs/
+*.tmp

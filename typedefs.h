@@ -1,7 +1,7 @@
 #define SCREEN_WIDTH	740
 #define SCREEN_HEIGHT	480
 
-#define MOVE_SPEED 4
+#define MOVE_SPEED 5
 #define JUMP_HIGH 50
 #define JUMP_SPEED 4
 
@@ -29,12 +29,14 @@ typedef struct
 typedef struct
 {
 	SDL_Surface *sprite;
-	SDL_Rect stand_l = { 181, 0, 13, 16 };
-	SDL_Rect stand_r = { 211, 0, 13, 16 };
+	SDL_Rect stand_l = { 181, 0, 12, 16 };
+	SDL_Rect stand_r = { 211, 0, 12, 16 };
 	SDL_Rect jump_l = { 29, 0, 17, 16 };
 	SDL_Rect jump_r =  { 359, 0, 17, 16 };
 	SDL_Rect *curr_frame;
 	pos_t pos;
+	pos_t start;
+	int start_jump = 0, end_jump = 0;
 	/*
 	SDL_Rect go_l
 	SDL_Rect go_r
@@ -43,8 +45,7 @@ typedef struct
 
 typedef struct
 {
-	int w;
-	int h;
+	int start_y, start_x, w, h;
 	element_t **map;
 	int error = 0;
 }level_t;
