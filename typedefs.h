@@ -2,7 +2,7 @@
 #define SCREEN_HEIGHT	480
 
 #define MOVE_SPEED 4
-#define JUMP_HIGH 50
+#define JUMP_HIGH 25
 #define JUMP_SPEED 4
 
 typedef enum
@@ -10,7 +10,8 @@ typedef enum
 	NOTHING,
 	MARIO,
 	GROUND,
-	PLATFORM
+	PLATFORM,
+	CHECK
 }element_t;
 
 typedef enum
@@ -31,6 +32,7 @@ typedef struct
 {
 	SDL_Rect ground = { 0,0,16,16 };	//x,y - location in file, width, height
 	SDL_Rect platform = { 16,0,16,16 };
+	SDL_Rect check = { 32,0,16,16 };
 	SDL_Surface *sprite;
 }block_t;
 
@@ -45,8 +47,8 @@ typedef struct
 	SDL_Surface *sprite;
 	SDL_Rect stand_l = { 181, 0, 12, 16 };
 	SDL_Rect stand_r = { 211, 0, 12, 16 };
-	SDL_Rect jump_l = { 29, 0, 17, 16 };
-	SDL_Rect jump_r =  { 359, 0, 17, 16 };
+	SDL_Rect jump_l = { 29, 0, 16, 16 };
+	SDL_Rect jump_r =  { 359, 0, 16, 16 };
 	SDL_Rect *curr_frame;
 	pos_t pos;
 	pos_t start;

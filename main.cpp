@@ -105,7 +105,7 @@ void newGame(double &time, mario_t &mario)
 	mario.curr_frame = &mario.stand_r;
 }
 
-level_t load_map(FILE *file)
+level_t load_map(FILE *file, mario_t &mario, block_t block)
 {
 	level_t level;
 	fscanf(file, "%d", &level.w);
@@ -140,16 +140,34 @@ level_t load_map(FILE *file)
 		}
 	}
 
+	//mario start position
+	for (int i = 0; i < level.h; i++)
+	{
+		for (int j = 0; j < level.w; j++)
+		{
+			if (level.map[i][j] == MARIO)
+			{
+				mario.start.x = j*block.ground.w + 1;
+				mario.start.y = SCREEN_HEIGHT - (level.h - i)*block.ground.h;
+				mario.pos.x = mario.start.x;
+				mario.pos.y = mario.start.y;
+				level.map[i][j] = NOTHING;
+				break;
+			}
+		}
+	}
+
 	return level;
 }
 
-void load_level(SDL_Surface *screen, level_t &level, mario_t mario, block_t block)
+void load_level(SDL_Surface *screen, level_t &level, mario_t &mario, block_t block)
 {
 	level.start_y = SCREEN_HEIGHT - (level.h * block.ground.h);
 	level.start_x = 0;
 
 	int start_x = level.start_x, start_y = level.start_y;
 
+	//draw map
 	for (int i = 0; i < level.h; i++)
 	{
 		start_x = level.start_x;
@@ -160,81 +178,121 @@ void load_level(SDL_Surface *screen, level_t &level, mario_t mario, block_t bloc
 			case NOTHING:
 
 				break;
-			case MARIO:
-				DrawElement(screen, mario.pos.x, mario.pos.y, *mario.curr_frame, mario.sprite);
-				break;
 			case GROUND:
 				DrawElement(screen, start_x, start_y, block.ground, block.sprite);
 				break;
 			case PLATFORM:
 				DrawElement(screen, start_x, start_y, block.platform, block.sprite);
 				break;
+			case CHECK:
+				DrawElement(screen, start_x, start_y, block.check, block.sprite);
+				level.map[i][j] = PLATFORM;
+				break;
 			}
 			start_x += block.ground.w;
 		}
 		start_y += block.ground.h;
 	}
+	//draw mario
+	DrawElement(screen, mario.pos.x, mario.pos.y, *mario.curr_frame, mario.sprite);
 }
 
-void jump(mario_t &mario, double time)
+void jump(mario_t &mario, level_t level, block_t block, double time)
 {
 	int decimal = (time * 100) / 1;
-if (mario.start_jump > 0 && !mario.end_jump && decimal % JUMP_SPEED == 0)
-{
-	mario.pos.y--;
-	mario.start_jump++;
-	if (mario.start_jump == JUMP_HIGH) mario.end_jump = 1;
-}
+	int y = (mario.pos.y - level.start_y - 1) / block.platform.h;
+	int left_corner = (level.start_x + mario.pos.x) / block.platform.w;
+	int right_corner = (mario.pos.x + mario.curr_frame->w - 1) / block.ground.w;
 
-if (mario.end_jump && decimal % JUMP_SPEED == 0)
-{
-	mario.start_jump--;
-	mario.pos.y++;
-	if (mario.start_jump == 1)
+	if (y < 0)
 	{
-		mario.end_jump = 0;
-		mario.start_jump = 0;
-		if (mario.curr_frame == &mario.jump_l)
+		y = 0;
+	}
+
+	if (level.map[y][left_corner] == NOTHING && level.map[y][right_corner] == NOTHING)
+	{
+		if (mario.key.up && !mario.end_jump && decimal % JUMP_SPEED == 0)
 		{
-			mario.curr_frame = &mario.stand_l;
+			mario.pos.y--;
+			mario.start_jump++;
+			if (mario.start_jump == JUMP_HIGH) mario.end_jump = 1;
 		}
-		else
+
+	}
+
+	//fall when jump
+	if((!mario.key.up && mario.start_jump > 1) || mario.end_jump)
+	{
+		if (decimal % JUMP_SPEED == 0)
 		{
-			mario.curr_frame = &mario.stand_r;
+			mario.start_jump--;
+			mario.pos.y++;
+			if (mario.start_jump == 1)
+			{
+				mario.end_jump = 0;
+				mario.start_jump = 0;
+				if (mario.curr_frame == &mario.jump_l)
+				{
+					mario.curr_frame = &mario.stand_l;
+				}
+				else
+				{
+					mario.curr_frame = &mario.stand_r;
+				}
+			}
 		}
 	}
-}
 }
 
 void move(mario_t &mario, level_t level, block_t block, double time)
 {
 	int x, y;
+	y = (mario.pos.y + mario.curr_frame->h - 1 - level.start_y) / block.ground.h;
 	int decimal = (time * 100) / 1;
-	y = (mario.pos.y + mario.start_jump - level.start_y) / block.ground.w;
+	int mario_bottom = mario.pos.y + mario.curr_frame->h;
+	int mario_right = mario.pos.x + mario.curr_frame->w;
+	int element_up_wall = level.start_y + (y*block.platform.w);
 	if (y < 0)
 	{
 		y = 0;
 	}
-	
+	x = ((mario.pos.x + mario.curr_frame->w) / block.ground.w);
+	int element_left_wall = level.start_x + (x*block.platform.w);
+
+	if (level.map[y][x] == GROUND || level.map[y][x] == PLATFORM)
+	{
+		while (mario_right > element_left_wall)
+		{
+			mario.pos.x--;
+			break;
+		}
+
+	}
 	switch (mario.status)
 	{
 	case RIGHT:
-		if (mario.pos.x > (level.w - 1) * block.ground.w) break;
+		if (mario.pos.x > ((level.w - 1) * block.ground.w)) break;
+
 		if (decimal % MOVE_SPEED == 0)
 		{
-			x = (mario.pos.x + mario.curr_frame->w) / block.ground.w;
 			if (level.map[y][x] != GROUND && level.map[y][x] != PLATFORM)
 			{
 				mario.pos.x++;
-				break;	
+				if (mario.start_jump == 0)
+				{
+					mario.curr_frame = &mario.stand_r;
+				}
+				break;
 			}
 			else
 			{
-				int mario_bottom = mario.pos.y + mario.curr_frame->h;
-				int element_up_wall = level.start_y + (y*block.platform.h);
 				if (mario_bottom < element_up_wall)
 				{
 					mario.pos.x++;
+					if (mario.start_jump == 0)
+					{
+						mario.curr_frame = &mario.stand_r;
+					}
 					break;
 				}
 			}
@@ -244,25 +302,64 @@ void move(mario_t &mario, level_t level, block_t block, double time)
 		if (mario.pos.x - 1 < 0) break;
 		if (decimal % MOVE_SPEED == 0)
 		{
-			x = (mario.pos.x - 1) / 16;
+			x = (mario.pos.x - 1) / block.ground.w;
 			if (level.map[y][x] != GROUND && level.map[y][x] != PLATFORM)
 			{
 				mario.pos.x--;
+				if (mario.start_jump == 0)
+				{
+					mario.curr_frame = &mario.stand_l;
+				}
 				break;
 			}
 			else
 			{
-				int mario_bottom = mario.pos.y + mario.curr_frame->h;
-				int element_up_wall = level.start_y + (y*block.platform.w);
 				if (mario_bottom < element_up_wall)
 				{
 					mario.pos.x--;
+					if (mario.start_jump == 0)
+					{
+						mario.curr_frame = &mario.stand_l;
+					}
 					break;
 				}
 			}
 		}
 		break;
 	}
+
+	//fall down from block
+	y = (mario.pos.y + mario.curr_frame->h - level.start_y) / block.ground.h;
+	if (decimal % MOVE_SPEED == 0)
+	{
+		int right_corner = (mario.pos.x + mario.curr_frame->w-1) / block.ground.w;
+		int left_corner = mario.pos.x / block.ground.h;
+
+		if (level.map[y][left_corner] == NOTHING && level.map[y][right_corner] == NOTHING)
+		{
+			if (mario.end_jump == 1 || mario.start_jump == 0)
+			{
+				mario.pos.y++;
+				if (mario.status == RIGHT)
+				{
+					mario.curr_frame = &mario.jump_r;
+				}
+				else
+				{
+					mario.curr_frame = &mario.jump_l;
+				}
+
+			}
+		}
+		else
+		{
+			mario.start_jump = 0;
+			mario.end_jump = 0;
+			
+		}
+	}
+
+	
 }
 
 // main
@@ -290,11 +387,13 @@ int main(int argc, char **argv) {
 		}
 
 	// tryb pe³noekranowy
-	rc = SDL_CreateWindowAndRenderer(0, 0, SDL_WINDOW_FULLSCREEN_DESKTOP,
+	/*rc = SDL_CreateWindowAndRenderer(0, 0, SDL_WINDOW_FULLSCREEN_DESKTOP,
 	                                 &window, &renderer);
-	/*rc = SDL_CreateWindowAndRenderer(SCREEN_WIDTH, SCREEN_HEIGHT, 0,
+*/
+	rc = SDL_CreateWindowAndRenderer(SCREEN_WIDTH, SCREEN_HEIGHT, 0,
 	                                 &window, &renderer);
-	*/if(rc != 0) {
+
+	if(rc != 0) {
 		SDL_Quit();
 		printf("SDL_CreateWindowAndRenderer error: %s\n", SDL_GetError());
 		return 1;
@@ -395,28 +494,12 @@ int main(int argc, char **argv) {
 	//map
 	level_t level;
 	FILE *file = fopen("map1.map", "r");
-	level = load_map(file);
+	level = load_map(file, mario, block);
 	if (level.error == 1)
 	{
 		return 0;
 	}
-
-	//mario start position
-	for (int i = 0; i < level.h; i++)
-	{
-		for (int j = 0; j < level.w; j++)
-		{
-			if (level.map[i][j] == MARIO)
-			{
-				mario.start.x = j*block.ground.w + 1;
-				mario.start.y = SCREEN_HEIGHT - (level.h - i)*block.ground.h;
-				mario.pos.x = mario.start.x;
-				mario.pos.y = mario.start.y;
-				break;
-			}
-		}
-	}
-	
+	fclose(file);	
 
 	//rysowanie
 	while(!quit) {
@@ -492,11 +575,7 @@ int main(int argc, char **argv) {
 						mario.key.left = 1;
 						mario.status = RIGHT;
 
-						if (mario.start_jump == 0)
-						{
-							mario.curr_frame = &mario.stand_r;
-						}
-						else
+						if (mario.start_jump != 0)
 						{
 							mario.curr_frame = &mario.jump_r;
 						}
@@ -517,9 +596,9 @@ int main(int argc, char **argv) {
 					}
 					else if (event.key.keysym.sym == SDLK_UP)
 					{
-						mario.key.up = 1;
 						if (mario.start_jump == 0)
 						{
+							mario.key.up = 1;
 							mario.start_jump=1;
 							if (mario.curr_frame == &mario.stand_l)
 							{
@@ -534,12 +613,18 @@ int main(int argc, char **argv) {
 					}
 					break;
 				case SDL_KEYUP:
-					if (event.key.keysym.sym != SDLK_UP)
+					if (event.key.keysym.sym == SDLK_UP)
 						mario.key.up = 0;
-					if (event.key.keysym.sym != SDLK_RIGHT)
+					if (event.key.keysym.sym == SDLK_RIGHT)
+					{
 						mario.key.right = 0;
-					if (event.key.keysym.sym != SDLK_LEFT)
+						mario.status = STAND;
+					}
+					if (event.key.keysym.sym == SDLK_LEFT)
+					{
 						mario.key.left = 0;
+						mario.status = STAND;
+					}
 
 					if(!mario.key.left && !mario.key.right && !mario.key.up)
 						mario.status = STAND;
@@ -551,7 +636,7 @@ int main(int argc, char **argv) {
 			};
 
 		//jump
-		jump(mario, worldTime);
+		jump(mario, level, block, worldTime);
 		move(mario, level, block, worldTime);
 		
 		
