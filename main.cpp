@@ -157,20 +157,20 @@ level_t load_map(FILE *file, mario_t &mario, block_t block)
 		}
 	}
 
+	level.start_y = SCREEN_HEIGHT - (level.h * block.ground.h);
+	level.start_x = 0;
+
 	return level;
 }
 
 void load_level(SDL_Surface *screen, level_t &level, mario_t &mario, block_t block)
 {
-	level.start_y = SCREEN_HEIGHT - (level.h * block.ground.h);
-	level.start_x = 0;
-
-	int start_x = level.start_x, start_y = level.start_y;
+	int start_x = 0, start_y = level.start_y;
 
 	//draw map
 	for (int i = 0; i < level.h; i++)
 	{
-		start_x = level.start_x;
+		start_x = 0;
 		for (int j = 0; j < level.w; j++)
 		{
 			switch (level.map[i][j])
@@ -179,13 +179,13 @@ void load_level(SDL_Surface *screen, level_t &level, mario_t &mario, block_t blo
 
 				break;
 			case GROUND:
-				DrawElement(screen, start_x, start_y, block.ground, block.sprite);
+				DrawElement(screen, start_x - level.start_x, start_y, block.ground, block.sprite);
 				break;
 			case PLATFORM:
-				DrawElement(screen, start_x, start_y, block.platform, block.sprite);
+				DrawElement(screen, start_x - level.start_x, start_y, block.platform, block.sprite);
 				break;
 			case CHECK:
-				DrawElement(screen, start_x, start_y, block.check, block.sprite);
+				DrawElement(screen, start_x - level.start_x, start_y, block.check, block.sprite);
 				level.map[i][j] = PLATFORM;
 				break;
 			}
@@ -271,7 +271,7 @@ void move(mario_t &mario, level_t level, block_t block, double time)
 	switch (mario.status)
 	{
 	case RIGHT:
-		if (mario.pos.x > ((level.w - 1) * block.ground.w)) break;
+		if (mario.pos.x + mario.curr_frame->w == SCREEN_WIDTH) break;
 
 		if (decimal % MOVE_SPEED == 0)
 		{
@@ -348,7 +348,6 @@ void move(mario_t &mario, level_t level, block_t block, double time)
 				{
 					mario.curr_frame = &mario.jump_l;
 				}
-
 			}
 		}
 		else
@@ -358,8 +357,27 @@ void move(mario_t &mario, level_t level, block_t block, double time)
 			
 		}
 	}
+}
 
-	
+void camera(mario_t &mario, level_t &level, block_t block)
+{
+	if (level.w * block.ground.w - level.start_x - 1 != SCREEN_WIDTH)
+	{
+		if (mario.pos.x == (2 * SCREEN_WIDTH) / 3)
+		{
+			level.start_x++;
+			mario.pos.x -=  1;
+		}
+	}
+
+	if (level.start_x != 0)
+	{
+		if (mario.pos.x == (1 * SCREEN_WIDTH) / 3)
+		{
+			level.start_x--;
+			mario.pos.x += 1;
+		}
+	}
 }
 
 // main
@@ -638,6 +656,7 @@ int main(int argc, char **argv) {
 		//jump
 		jump(mario, level, block, worldTime);
 		move(mario, level, block, worldTime);
+		camera(mario, level, block);
 		
 		
 		frames++;
