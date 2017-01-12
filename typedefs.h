@@ -1,7 +1,7 @@
 #define SCREEN_WIDTH	740
 #define SCREEN_HEIGHT	480
 
-#define MOVE_SPEED 5
+#define MOVE_SPEED 4
 #define JUMP_HIGH 50
 #define JUMP_SPEED 4
 
@@ -12,6 +12,20 @@ typedef enum
 	GROUND,
 	PLATFORM
 }element_t;
+
+typedef enum
+{
+	STAND,
+	LEFT,
+	RIGHT
+}status_t;
+
+typedef struct
+{
+	int left = 0;
+	int right = 0;
+	int up = 0;
+}key_t;
 
 typedef struct
 {
@@ -36,6 +50,8 @@ typedef struct
 	SDL_Rect *curr_frame;
 	pos_t pos;
 	pos_t start;
+	key_t key;
+	status_t status;
 	int start_jump = 0, end_jump = 0;
 	/*
 	SDL_Rect go_l
