@@ -238,20 +238,20 @@ void jump(mario_t &mario, level_t level, block_t block, double time)
 			{
 				mario.end_jump = 1;
 				mario.pos.y++;
-				if (mario.status == RIGHT)
-				{
-					mario.curr_frame = &mario.jump_r;
-				}
-				else
-				{
-					mario.curr_frame = &mario.jump_l;
-				}
 			}
 		}
 		else
 		{
 			mario.start_jump = 0;
 			mario.end_jump = 0;
+			if (mario.curr_frame == &mario.jump_l)
+			{
+				mario.curr_frame = &mario.stand_l;
+			}
+			else if (mario.curr_frame == &mario.jump_r)
+			{
+				mario.curr_frame = &mario.stand_r;
+			}
 		}
 	}
 }
@@ -261,13 +261,14 @@ void move(mario_t &mario, level_t level, block_t block, double time)
 	int x, y;
 	int decimal = (time * 100) / 1;
 	int mario_bottom = mario.pos.y + mario.curr_frame->h;
-	int mario_right = mario.pos.x + mario.curr_frame->w;
+	int mario_right = mario.pos.x + mario.curr_frame->w -1;
 
 	int mario_down = (mario.pos.y + mario.curr_frame->h - 1 - level.start_y) / block.ground.h;
 	int mario_up = (mario.pos.y - level.start_y) / block.ground.h;
 
-	int element_up_wall = level.start_y + (mario_down*block.platform.w);
+	int block_up_wall = level.start_y + (mario_down*block.platform.w);
 
+	//mario to high
 	if (mario_down < 0)
 	{
 		mario_down = 0;
@@ -277,15 +278,15 @@ void move(mario_t &mario, level_t level, block_t block, double time)
 		mario_up = 0;
 	}
 
-	x = ((mario.pos.x + mario.curr_frame->w) / block.ground.w) - (level.start_x/block.ground.w);
-	// if mario penetrade block
+	x = ((mario.pos.x + level.start_x + mario.curr_frame->w + 1) / block.ground.w);
+	// if mario penetrade block at right
 	if (level.map[mario_down][x] != NOTHING)
 	{
-		int element_left_wall = level.start_x + (x*block.platform.w);
+		int element_left_wall = (x*block.platform.w) - level.start_x;
 		while (mario_right >= element_left_wall)
 		{
 			mario.pos.x--;
-			break;
+			mario_right--;
 		}
 	}
 
@@ -302,19 +303,11 @@ void move(mario_t &mario, level_t level, block_t block, double time)
 				if (level.map[mario_up][x] == NOTHING && level.map[mario_down][x] == NOTHING)
 				{
 					mario.pos.x++;
-					if (mario.start_jump == 0)
-					{
-						mario.curr_frame = &mario.stand_r;
-					}
 					break;
 				}
-				else if (mario_bottom < element_up_wall)
+				else if (mario_bottom < block_up_wall)
 				{
 					mario.pos.x++;
-					if (mario.start_jump == 0)
-					{
-						mario.curr_frame = &mario.stand_r;
-					}
 					break;
 				}
 			}
@@ -328,21 +321,13 @@ void move(mario_t &mario, level_t level, block_t block, double time)
 				if (level.map[mario_up][x] == NOTHING && level.map[mario_down][x] == NOTHING)
 				{
 					mario.pos.x--;
-					if (mario.start_jump == 0)
-					{
-						mario.curr_frame = &mario.stand_l;
-					}
 					break;
 				}
 				else
 				{
-					if (mario_bottom < element_up_wall)
+					if (mario_bottom < block_up_wall)
 					{
 						mario.pos.x--;
-						if (mario.start_jump == 0)
-						{
-							mario.curr_frame = &mario.stand_l;
-						}
 						break;
 					}
 				}
@@ -388,7 +373,6 @@ int main(int argc, char **argv) {
 	SDL_Renderer *renderer;
 	block_t block;
 	mario_t mario;
-	int go = 0;
 
 	mario.curr_frame = &mario.stand_r;
 
@@ -591,7 +575,11 @@ int main(int argc, char **argv) {
 						mario.key.right = 1;
 						mario.status = RIGHT;
 
-						if (mario.start_jump != 0)
+						if (mario.start_jump == 0)
+						{
+							mario.curr_frame = &mario.stand_r;
+						}
+						else
 						{
 							mario.curr_frame = &mario.jump_r;
 						}
@@ -620,7 +608,7 @@ int main(int argc, char **argv) {
 							{
 								mario.curr_frame = &mario.jump_l;
 							}
-							else
+							else if(mario.curr_frame == & mario.stand_r)
 							{
 								mario.curr_frame = &mario.jump_r;
 							}
@@ -634,12 +622,10 @@ int main(int argc, char **argv) {
 					if (event.key.keysym.sym == SDLK_RIGHT)
 					{
 						mario.key.right = 0;
-						mario.status = STAND;
 					}
 					if (event.key.keysym.sym == SDLK_LEFT)
 					{
 						mario.key.left = 0;
-						mario.status = STAND;
 					}
 
 					if(!mario.key.left && !mario.key.right && !mario.key.up)
@@ -651,7 +637,7 @@ int main(int argc, char **argv) {
 				};
 			};
 
-		//jump
+		
 		jump(mario, level, block, worldTime);
 		move(mario, level, block, worldTime);
 		camera(mario, level, block);
