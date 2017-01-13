@@ -203,8 +203,8 @@ void jump(mario_t &mario, level_t level, block_t block, double time)
 {
 	int decimal = (time * 100) / 1;
 	int y = (mario.pos.y - level.start_y - 1) / block.platform.h;
-	int left_corner = (level.start_x + mario.pos.x) / block.platform.w;
-	int right_corner = (mario.pos.x + mario.curr_frame->w - 1) / block.ground.w;
+	int left_corner = (mario.pos.x + level.start_x) / block.platform.w;
+	int right_corner = (mario.pos.x + level.start_x + mario.curr_frame->w - 1) / block.ground.w;
 
 	if (y < 0)
 	{
@@ -229,8 +229,8 @@ void jump(mario_t &mario, level_t level, block_t block, double time)
 	y = (mario.pos.y + mario.curr_frame->h - level.start_y) / block.ground.h;
 	if (decimal % MOVE_SPEED == 0)
 	{
-		int right_corner = (mario.pos.x + mario.curr_frame->w - 1) / block.ground.w;
-		int left_corner = mario.pos.x / block.ground.h;
+		int right_corner = (mario.pos.x + level.start_x + mario.curr_frame->w - 1) / block.ground.w;
+		int left_corner = (mario.pos.x + level.start_x) / block.ground.h;
 
 		if (level.map[y][left_corner] == NOTHING && level.map[y][right_corner] == NOTHING)
 		{
@@ -252,7 +252,6 @@ void jump(mario_t &mario, level_t level, block_t block, double time)
 		{
 			mario.start_jump = 0;
 			mario.end_jump = 0;
-
 		}
 	}
 }
@@ -264,19 +263,26 @@ void move(mario_t &mario, level_t level, block_t block, double time)
 	int mario_bottom = mario.pos.y + mario.curr_frame->h;
 	int mario_right = mario.pos.x + mario.curr_frame->w;
 
-	y = (mario.pos.y + mario.curr_frame->h - 1 - level.start_y) / block.ground.h;
-	x = ((mario.pos.x + mario.curr_frame->w) / block.ground.w);
-	int element_up_wall = level.start_y + (y*block.platform.w);
-	if (y < 0)
+	int mario_down = (mario.pos.y + mario.curr_frame->h - 1 - level.start_y) / block.ground.h;
+	int mario_up = (mario.pos.y - level.start_y) / block.ground.h;
+
+	int element_up_wall = level.start_y + (mario_down*block.platform.w);
+
+	if (mario_down < 0)
 	{
-		y = 0;
+		mario_down = 0;
+	}
+	if (mario_up < 0)
+	{
+		mario_up = 0;
 	}
 
+	x = ((mario.pos.x + mario.curr_frame->w) / block.ground.w) - (level.start_x/block.ground.w);
 	// if mario penetrade block
-	int element_left_wall = level.start_x + (x*block.platform.w);
-	if (level.map[y][x] != NOTHING)
+	if (level.map[mario_down][x] != NOTHING)
 	{
-		while (mario_right > element_left_wall)
+		int element_left_wall = level.start_x + (x*block.platform.w);
+		while (mario_right >= element_left_wall)
 		{
 			mario.pos.x--;
 			break;
@@ -292,7 +298,8 @@ void move(mario_t &mario, level_t level, block_t block, double time)
 
 			if (decimal % MOVE_SPEED == 0)
 			{
-				if (level.map[y][x] == NOTHING)
+				x = ((mario.pos.x + level.start_x + mario.curr_frame->w) / block.ground.w);
+				if (level.map[mario_up][x] == NOTHING && level.map[mario_down][x] == NOTHING)
 				{
 					mario.pos.x++;
 					if (mario.start_jump == 0)
@@ -301,26 +308,24 @@ void move(mario_t &mario, level_t level, block_t block, double time)
 					}
 					break;
 				}
-				else
+				else if (mario_bottom < element_up_wall)
 				{
-					if (mario_bottom < element_up_wall)
+					mario.pos.x++;
+					if (mario.start_jump == 0)
 					{
-						mario.pos.x++;
-						if (mario.start_jump == 0)
-						{
-							mario.curr_frame = &mario.stand_r;
-						}
-						break;
+						mario.curr_frame = &mario.stand_r;
 					}
+					break;
 				}
 			}
 			break;
 		case LEFT:
 			if (mario.pos.x - 1 < 0) break;
+
 			if (decimal % MOVE_SPEED == 0)
 			{
-				x = (mario.pos.x - 1) / block.ground.w;
-				if (level.map[y][x] == NOTHING)
+				x = (mario.pos.x + level.start_x - 1) / block.ground.w;
+				if (level.map[mario_up][x] == NOTHING && level.map[mario_down][x] == NOTHING)
 				{
 					mario.pos.x--;
 					if (mario.start_jump == 0)
