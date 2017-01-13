@@ -49,12 +49,14 @@ typedef struct
 	SDL_Rect stand_r = { 211, 0, 12, 16 };
 	SDL_Rect jump_l = { 29, 0, 15, 16 };
 	SDL_Rect jump_r =  { 359, 0, 15, 16 };
+	SDL_Rect heart = { 3, 3, 11, 9 };
 	SDL_Rect *curr_frame = &stand_r;
 	pos_t pos;
 	pos_t start;
 	key_t key;
 	status_t status = STAND;
 	int start_jump = 0, end_jump = 0;
+	int lifes = 3;
 	/*
 	SDL_Rect go_l
 	SDL_Rect go_r

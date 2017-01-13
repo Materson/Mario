@@ -541,15 +541,17 @@ int main(int argc, char **argv) {
 			DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, 26, text, charset);
 			sprintf(text, "Wcisnij n, aby rozpoczac nowa gre lub ESC aby zakonczyc");
 			DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, screen->h / 2, text, charset);
-
-			
 		}
 		else
 		{
 			// tekst informacyjny
 			DrawRectangle(screen, 4, 4, SCREEN_WIDTH - 8, 36, czerwony, niebieski);
 			sprintf(text, "Pozostaly czas = %.1lf s  %.0lf klatek / s", level.time-worldTime, fps);
+			int text_len = strlen(text);	//remeber to draw lifes in good position
+			DrawElement(screen, screen->w / 2 - strlen(text) * 8 / 2 - mario.heart.w - 40, 10, mario.heart, mario.sprite);
 			DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, 10, text, charset);
+			sprintf(text, "x%d", mario.lifes);
+			DrawString(screen, screen->w / 2 - text_len * 8 / 2 - mario.heart.w - 25, 10, text, charset);
 			sprintf(text, "Esc - wyjscie, n - nowa gra, znak - ");
 			DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, 26, text, charset);
 		}
