@@ -97,6 +97,10 @@ void DrawRectangle(SDL_Surface *screen, int x, int y, int l, int k,
 
 void newGame(mario_t &mario, level_t &level, double &time)
 {
+	if (mario.lifes <= 0)
+	{
+		mario.lifes = 3;
+	}
 	time = 0;
 	mario.pos.x = mario.start.x;
 	mario.pos.y = mario.start.y;
@@ -534,13 +538,25 @@ int main(int argc, char **argv) {
 
 		if (level.time - worldTime <= 0)
 		{
-			DrawRectangle(screen, 4, 4, SCREEN_WIDTH - 8, 36, czerwony, niebieski);
-			sprintf(text, "Pozostaly czas = 0 s  %.0lf klatek / s", fps);
-			DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, 10, text, charset);
-			sprintf(text, "KONIEC CZASU");
-			DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, 26, text, charset);
-			sprintf(text, "Wcisnij n, aby rozpoczac nowa gre lub ESC aby zakonczyc");
-			DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, screen->h / 2, text, charset);
+			if (mario.lifes > 0)
+			{
+				mario.lifes--;
+				if (mario.lifes != 0) newGame(mario, level, worldTime);
+			}
+			else
+			{
+				DrawRectangle(screen, 4, 4, SCREEN_WIDTH - 8, 36, czerwony, niebieski);
+				sprintf(text, "Pozostaly czas = 0 s  %.0lf klatek / s", fps);
+				int text_len = strlen(text);	//remeber to draw lifes in good position
+				DrawElement(screen, screen->w / 2 - strlen(text) * 8 / 2 - mario.heart.w - 40, 10, mario.heart, mario.sprite);
+				DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, 10, text, charset);
+				sprintf(text, "x%d", mario.lifes);
+				DrawString(screen, screen->w / 2 - text_len * 8 / 2 - mario.heart.w - 25, 10, text, charset);
+				sprintf(text, "KONIEC CZASU");
+				DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, 26, text, charset);
+				sprintf(text, "Wcisnij n, aby rozpoczac nowa gre lub ESC aby zakonczyc");
+				DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, screen->h / 2, text, charset);
+			}
 		}
 		else
 		{
