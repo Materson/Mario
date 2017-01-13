@@ -95,13 +95,14 @@ void DrawRectangle(SDL_Surface *screen, int x, int y, int l, int k,
 		DrawLine(screen, x + 1, i, l - 2, 1, 0, fillColor);
 	};
 
-void newGame(double &time, mario_t &mario)
+void newGame(mario_t &mario, level_t &level, double &time)
 {
 	time = 0;
 	mario.pos.x = mario.start.x;
 	mario.pos.y = mario.start.y;
 	mario.start_jump = 0;
 	mario.end_jump = 0;
+	level.start_x = 0;
 	mario.curr_frame = &mario.stand_r;
 }
 
@@ -110,6 +111,7 @@ level_t load_map(FILE *file, mario_t &mario, block_t block)
 	level_t level;
 	fscanf(file, "%d", &level.w);
 	fscanf(file, "%d", &level.h);
+	fscanf(file, "%d", &level.time);
 	//create matrix
 	level.map = (element_t **)malloc(level.h*level.w * sizeof(element_t));
 	if (level.map == NULL)
@@ -209,15 +211,18 @@ void jump(mario_t &mario, level_t level, block_t block, double time)
 		y = 0;
 	}
 
-	if (level.map[y][left_corner] == NOTHING && level.map[y][right_corner] == NOTHING)
+	if (level.time - time > 0)
 	{
-		if (mario.key.up && !mario.end_jump && decimal % JUMP_SPEED == 0)
+		if (level.map[y][left_corner] == NOTHING && level.map[y][right_corner] == NOTHING)
 		{
-			mario.pos.y--;
-			mario.start_jump++;
-			if (mario.start_jump == JUMP_HIGH) mario.end_jump = 1;
-		}
+			if (mario.key.up && !mario.end_jump && decimal % JUMP_SPEED == 0)
+			{
+				mario.pos.y--;
+				mario.start_jump++;
+				if (mario.start_jump == JUMP_HIGH) mario.end_jump = 1;
+			}
 
+		}
 	}
 
 	//fall when jump
@@ -247,18 +252,20 @@ void jump(mario_t &mario, level_t level, block_t block, double time)
 void move(mario_t &mario, level_t level, block_t block, double time)
 {
 	int x, y;
-	y = (mario.pos.y + mario.curr_frame->h - 1 - level.start_y) / block.ground.h;
 	int decimal = (time * 100) / 1;
 	int mario_bottom = mario.pos.y + mario.curr_frame->h;
 	int mario_right = mario.pos.x + mario.curr_frame->w;
+
+	y = (mario.pos.y + mario.curr_frame->h - 1 - level.start_y) / block.ground.h;
 	int element_up_wall = level.start_y + (y*block.platform.w);
 	if (y < 0)
 	{
 		y = 0;
 	}
+
+	// if mario penetrade block
 	x = ((mario.pos.x + mario.curr_frame->w) / block.ground.w);
 	int element_left_wall = level.start_x + (x*block.platform.w);
-
 	if (level.map[y][x] == GROUND || level.map[y][x] == PLATFORM)
 	{
 		while (mario_right > element_left_wall)
@@ -268,25 +275,16 @@ void move(mario_t &mario, level_t level, block_t block, double time)
 		}
 
 	}
-	switch (mario.status)
+	if (level.time - time > 0)
 	{
-	case RIGHT:
-		if (mario.pos.x + mario.curr_frame->w == SCREEN_WIDTH) break;
-
-		if (decimal % MOVE_SPEED == 0)
+		switch (mario.status)
 		{
-			if (level.map[y][x] != GROUND && level.map[y][x] != PLATFORM)
+		case RIGHT:
+			if (mario.pos.x + mario.curr_frame->w == SCREEN_WIDTH) break;
+
+			if (decimal % MOVE_SPEED == 0)
 			{
-				mario.pos.x++;
-				if (mario.start_jump == 0)
-				{
-					mario.curr_frame = &mario.stand_r;
-				}
-				break;
-			}
-			else
-			{
-				if (mario_bottom < element_up_wall)
+				if (level.map[y][x] != GROUND && level.map[y][x] != PLATFORM)
 				{
 					mario.pos.x++;
 					if (mario.start_jump == 0)
@@ -295,26 +293,26 @@ void move(mario_t &mario, level_t level, block_t block, double time)
 					}
 					break;
 				}
-			}
-		}
-		break;
-	case LEFT:
-		if (mario.pos.x - 1 < 0) break;
-		if (decimal % MOVE_SPEED == 0)
-		{
-			x = (mario.pos.x - 1) / block.ground.w;
-			if (level.map[y][x] != GROUND && level.map[y][x] != PLATFORM)
-			{
-				mario.pos.x--;
-				if (mario.start_jump == 0)
+				else
 				{
-					mario.curr_frame = &mario.stand_l;
+					if (mario_bottom < element_up_wall)
+					{
+						mario.pos.x++;
+						if (mario.start_jump == 0)
+						{
+							mario.curr_frame = &mario.stand_r;
+						}
+						break;
+					}
 				}
-				break;
 			}
-			else
+			break;
+		case LEFT:
+			if (mario.pos.x - 1 < 0) break;
+			if (decimal % MOVE_SPEED == 0)
 			{
-				if (mario_bottom < element_up_wall)
+				x = (mario.pos.x - 1) / block.ground.w;
+				if (level.map[y][x] != GROUND && level.map[y][x] != PLATFORM)
 				{
 					mario.pos.x--;
 					if (mario.start_jump == 0)
@@ -323,9 +321,21 @@ void move(mario_t &mario, level_t level, block_t block, double time)
 					}
 					break;
 				}
+				else
+				{
+					if (mario_bottom < element_up_wall)
+					{
+						mario.pos.x--;
+						if (mario.start_jump == 0)
+						{
+							mario.curr_frame = &mario.stand_l;
+						}
+						break;
+					}
+				}
 			}
+			break;
 		}
-		break;
 	}
 
 	//fall down from block
@@ -361,6 +371,7 @@ void move(mario_t &mario, level_t level, block_t block, double time)
 
 void camera(mario_t &mario, level_t &level, block_t block)
 {
+	//right move
 	if (level.w * block.ground.w - level.start_x - 1 != SCREEN_WIDTH)
 	{
 		if (mario.pos.x == (2 * SCREEN_WIDTH) / 3)
@@ -369,7 +380,7 @@ void camera(mario_t &mario, level_t &level, block_t block)
 			mario.pos.x -=  1;
 		}
 	}
-
+	//left move
 	if (level.start_x != 0)
 	{
 		if (mario.pos.x == (1 * SCREEN_WIDTH) / 3)
@@ -502,13 +513,6 @@ int main(int argc, char **argv) {
 
 	t1 = SDL_GetTicks();
 
-	frames = 0;
-	fpsTimer = 0;
-	fps = 0;
-	quit = 0;
-	worldTime = 0;
-	distance = 0;
-
 	//map
 	level_t level;
 	FILE *file = fopen("map1.map", "r");
@@ -518,6 +522,13 @@ int main(int argc, char **argv) {
 		return 0;
 	}
 	fclose(file);	
+
+	frames = 0;
+	fpsTimer = 0;
+	fps = 0;
+	quit = 0;
+	worldTime = 0;
+	distance = 0;
 
 	//rysowanie
 	while(!quit) {
@@ -534,6 +545,7 @@ int main(int argc, char **argv) {
 		distance += 10 * delta;
 
 		SDL_FillRect(screen, NULL, niebieski);
+		load_level(screen, level, mario, block);
 
 		//rysuj eti
 		/*DrawSurface(screen, eti,
@@ -553,25 +565,28 @@ int main(int argc, char **argv) {
 			fpsTimer -= 0.5;
 			};
 
+		if (level.time - worldTime <= 0)
+		{
+			DrawRectangle(screen, 4, 4, SCREEN_WIDTH - 8, 36, czerwony, niebieski);
+			sprintf(text, "Pozostaly czas = 0 s  %.0lf klatek / s", fps);
+			DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, 10, text, charset);
+			sprintf(text, "KONIEC CZASU");
+			DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, 26, text, charset);
+			sprintf(text, "Wcisnij n, aby rozpoczac nowa gre lub ESC aby zakonczyc");
+			DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, screen->h / 2, text, charset);
 
-		// tekst informacyjny
-		DrawRectangle(screen, 4, 4, SCREEN_WIDTH - 8, 36, czerwony, niebieski);
-		sprintf(text, "Szablon drugiego zadania, czas trwania = %.1lf s  %.0lf klatek / s", worldTime, fps);
-		DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, 10, text, charset);
-		sprintf(text, "Esc - wyjscie, n - nowa gra, znak - ");
-		DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, 26, text, charset);
+			
+		}
+		else
+		{
+			// tekst informacyjny
+			DrawRectangle(screen, 4, 4, SCREEN_WIDTH - 8, 36, czerwony, niebieski);
+			sprintf(text, "Pozostaly czas = %.1lf s  %.0lf klatek / s", level.time-worldTime, fps);
+			DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, 10, text, charset);
+			sprintf(text, "Esc - wyjscie, n - nowa gra, znak - ");
+			DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, 26, text, charset);
+		}
 
-		////podloze
-		//int ground_w = SCREEN_WIDTH / block.ground.w + 1;
-		//for (int i = 0; i < ground_w; i++)
-		//{
-		//	DrawElement(screen, i*16, SCREEN_HEIGHT-block.ground.w, block.ground, block.sprite);
-		//}
-
-		////mario
-		//DrawElement(screen, mario.pos.x, mario.pos.y, *mario.curr_frame, mario.sprite);
-
-		load_level(screen, level, mario, block);
 
 
 		SDL_UpdateTexture(scrtex, NULL, screen->pixels, screen->pitch);
@@ -586,7 +601,7 @@ int main(int argc, char **argv) {
 					if(event.key.keysym.sym == SDLK_ESCAPE) quit = 1;
 					else if (event.key.keysym.sym == SDLK_n)
 					{
-						newGame(worldTime, mario);
+						newGame(mario, level, worldTime);
 					}
 					else if (event.key.keysym.sym == SDLK_RIGHT)
 					{

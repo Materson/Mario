@@ -66,4 +66,5 @@ typedef struct
 	int start_y, start_x, w, h;
 	element_t **map;
 	int error = 0;
+	int time;
 }level_t;
