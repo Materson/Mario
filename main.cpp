@@ -215,7 +215,7 @@ void jump(mario_t &mario, level_t level, block_t block, double time)
 	{
 		if (level.map[y][left_corner] == NOTHING && level.map[y][right_corner] == NOTHING)
 		{
-			if (mario.key.up && !mario.end_jump && decimal % JUMP_SPEED == 0)
+			if (mario.start_jump > 0 && !mario.end_jump && decimal % JUMP_SPEED == 0)
 			{
 				mario.pos.y--;
 				mario.start_jump++;
@@ -225,26 +225,34 @@ void jump(mario_t &mario, level_t level, block_t block, double time)
 		}
 	}
 
-	//fall when jump
-	if((!mario.key.up && mario.start_jump > 1) || mario.end_jump)
+	//fall down
+	y = (mario.pos.y + mario.curr_frame->h - level.start_y) / block.ground.h;
+	if (decimal % MOVE_SPEED == 0)
 	{
-		if (decimal % JUMP_SPEED == 0)
+		int right_corner = (mario.pos.x + mario.curr_frame->w - 1) / block.ground.w;
+		int left_corner = mario.pos.x / block.ground.h;
+
+		if (level.map[y][left_corner] == NOTHING && level.map[y][right_corner] == NOTHING)
 		{
-			mario.start_jump--;
-			mario.pos.y++;
-			if (mario.start_jump == 1)
+			if (mario.end_jump == 1 || mario.start_jump == 0)
 			{
-				mario.end_jump = 0;
-				mario.start_jump = 0;
-				if (mario.curr_frame == &mario.jump_l)
+				mario.end_jump = 1;
+				mario.pos.y++;
+				if (mario.status == RIGHT)
 				{
-					mario.curr_frame = &mario.stand_l;
+					mario.curr_frame = &mario.jump_r;
 				}
 				else
 				{
-					mario.curr_frame = &mario.stand_r;
+					mario.curr_frame = &mario.jump_l;
 				}
 			}
+		}
+		else
+		{
+			mario.start_jump = 0;
+			mario.end_jump = 0;
+
 		}
 	}
 }
@@ -257,6 +265,7 @@ void move(mario_t &mario, level_t level, block_t block, double time)
 	int mario_right = mario.pos.x + mario.curr_frame->w;
 
 	y = (mario.pos.y + mario.curr_frame->h - 1 - level.start_y) / block.ground.h;
+	x = ((mario.pos.x + mario.curr_frame->w) / block.ground.w);
 	int element_up_wall = level.start_y + (y*block.platform.w);
 	if (y < 0)
 	{
@@ -264,17 +273,16 @@ void move(mario_t &mario, level_t level, block_t block, double time)
 	}
 
 	// if mario penetrade block
-	x = ((mario.pos.x + mario.curr_frame->w) / block.ground.w);
 	int element_left_wall = level.start_x + (x*block.platform.w);
-	if (level.map[y][x] == GROUND || level.map[y][x] == PLATFORM)
+	if (level.map[y][x] != NOTHING)
 	{
 		while (mario_right > element_left_wall)
 		{
 			mario.pos.x--;
 			break;
 		}
-
 	}
+
 	if (level.time - time > 0)
 	{
 		switch (mario.status)
@@ -284,7 +292,7 @@ void move(mario_t &mario, level_t level, block_t block, double time)
 
 			if (decimal % MOVE_SPEED == 0)
 			{
-				if (level.map[y][x] != GROUND && level.map[y][x] != PLATFORM)
+				if (level.map[y][x] == NOTHING)
 				{
 					mario.pos.x++;
 					if (mario.start_jump == 0)
@@ -312,7 +320,7 @@ void move(mario_t &mario, level_t level, block_t block, double time)
 			if (decimal % MOVE_SPEED == 0)
 			{
 				x = (mario.pos.x - 1) / block.ground.w;
-				if (level.map[y][x] != GROUND && level.map[y][x] != PLATFORM)
+				if (level.map[y][x] == NOTHING)
 				{
 					mario.pos.x--;
 					if (mario.start_jump == 0)
@@ -335,36 +343,6 @@ void move(mario_t &mario, level_t level, block_t block, double time)
 				}
 			}
 			break;
-		}
-	}
-
-	//fall down from block
-	y = (mario.pos.y + mario.curr_frame->h - level.start_y) / block.ground.h;
-	if (decimal % MOVE_SPEED == 0)
-	{
-		int right_corner = (mario.pos.x + mario.curr_frame->w-1) / block.ground.w;
-		int left_corner = mario.pos.x / block.ground.h;
-
-		if (level.map[y][left_corner] == NOTHING && level.map[y][right_corner] == NOTHING)
-		{
-			if (mario.end_jump == 1 || mario.start_jump == 0)
-			{
-				mario.pos.y++;
-				if (mario.status == RIGHT)
-				{
-					mario.curr_frame = &mario.jump_r;
-				}
-				else
-				{
-					mario.curr_frame = &mario.jump_l;
-				}
-			}
-		}
-		else
-		{
-			mario.start_jump = 0;
-			mario.end_jump = 0;
-			
 		}
 	}
 }
@@ -605,7 +583,7 @@ int main(int argc, char **argv) {
 					}
 					else if (event.key.keysym.sym == SDLK_RIGHT)
 					{
-						mario.key.left = 1;
+						mario.key.right = 1;
 						mario.status = RIGHT;
 
 						if (mario.start_jump != 0)
@@ -615,7 +593,7 @@ int main(int argc, char **argv) {
 					}
 					else if (event.key.keysym.sym == SDLK_LEFT)
 					{
-						mario.key.right = 1;
+						mario.key.left = 1;
 						mario.status = LEFT;
 
 						if (mario.start_jump == 0)
@@ -632,7 +610,7 @@ int main(int argc, char **argv) {
 						if (mario.start_jump == 0)
 						{
 							mario.key.up = 1;
-							mario.start_jump=1;
+							mario.start_jump = 1;
 							if (mario.curr_frame == &mario.stand_l)
 							{
 								mario.curr_frame = &mario.jump_l;
