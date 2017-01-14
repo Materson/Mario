@@ -5,6 +5,8 @@
 #define JUMP_HIGH 25
 #define JUMP_SPEED 4
 
+#define MONSTER_SPEED 5
+
 #define MAP_NAME "map"
 
 typedef enum
@@ -80,7 +82,8 @@ typedef struct
 typedef struct
 {
 	pos_t pos;
-	status_t turn = LEFT;
+	pos_t start;
+	status_t turn;
 }monster_info;
 
 typedef struct

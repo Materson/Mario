@@ -95,7 +95,7 @@ void DrawRectangle(SDL_Surface *screen, int x, int y, int l, int k,
 		DrawLine(screen, x + 1, i, l - 2, 1, 0, fillColor);
 	};
 
-void newGame(mario_t &mario, level_t &level, double &time)
+void newGame(mario_t &mario, level_t &level, monster_t &monster, double &time)
 {
 	if (mario.lifes <= 0)
 	{
@@ -110,6 +110,12 @@ void newGame(mario_t &mario, level_t &level, double &time)
 	mario.curr_frame = &mario.stand_r;
 	if(level.curr <= level.all)
 		mario.status = STAND;
+	for (int i = 0; i < monster.num; i++)
+	{
+		monster.info[i].turn = LEFT;
+		monster.info[i].pos.x = monster.info[i].start.x;
+		monster.info[i].pos.y = monster.info[i].start.y;
+	}
 }
 
 char* file_name(int level)
@@ -194,8 +200,11 @@ int load_map( mario_t &mario, block_t block, monster_t &monster, level_t &level)
 		{
 			if (level.map[i][j] == MONSTER)
 			{
-				monster.info[k].pos.x = j*block.ground.w + 1;
-				monster.info[k].pos.y = SCREEN_HEIGHT - (level.h - i)*block.ground.h;
+				monster.info[k].start.x = j*block.ground.w + 1;
+				monster.info[k].start.y = SCREEN_HEIGHT - (level.h - i)*block.ground.h;
+				monster.info[k].pos.x = monster.info[k].start.x;
+				monster.info[k].pos.y = monster.info[k].start.y;
+				monster.info[k].turn = LEFT;
 				level.map[i][j] = NOTHING;
 				k++;
 			}
@@ -264,7 +273,10 @@ void load_level(SDL_Surface *screen, level_t level, mario_t mario, block_t block
 	//draw monsters
 	for (int i = 0; i < monster.num; i++)
 	{
-		DrawElement(screen, monster.info[i].pos.x - level.start_x, monster.info[i].pos.y, monster.go, monster.sprite);
+		if (monster.info[i].turn != MONSTER_DIE)
+		{
+			DrawElement(screen, monster.info[i].pos.x, monster.info[i].pos.y, monster.go, monster.sprite);
+		}
 	}
 
 	//draw mario
@@ -313,7 +325,7 @@ void jump(mario_t &mario, level_t level, block_t block, double time)
 	{
 		mario.end_jump = 1;
 	}
-	//touch bottom star
+	//touch top star
 	if (level.map[y][left_corner] == STAR || level.map[y][right_corner] == STAR)
 	{
 		mario.status = META;
@@ -324,7 +336,6 @@ void jump(mario_t &mario, level_t level, block_t block, double time)
 	y = (mario.pos.y + mario.curr_frame->h - level.start_y) / block.ground.h;
 	if (y == level.h)
 		y = level.h - 1;
-
 	if (decimal % MOVE_SPEED == 0 && mario.status != FALL_OUT_DIE)
 	{
 		right_corner = (mario.pos.x + level.start_x + mario.curr_frame->w - 1) / block.ground.w;
@@ -351,7 +362,7 @@ void jump(mario_t &mario, level_t level, block_t block, double time)
 				mario.curr_frame = &mario.stand_r;
 			}
 		}
-		//touch top start
+		//touch bottom start
 		if (level.map[y][left_corner] == STAR || level.map[y][right_corner] == STAR)
 		{
 			mario.status = META;
@@ -360,11 +371,11 @@ void jump(mario_t &mario, level_t level, block_t block, double time)
 
 }
 
-int move(mario_t &mario, level_t &level, block_t block, double &time)
+int move(mario_t &mario, level_t &level, monster_t &monster, block_t block, double &time)
 {
-	int x, y;
+	int x;
 	int decimal = (time * 100) / 1;
-	int mario_bottom = mario.pos.y + mario.curr_frame->h;
+	int mario_bottom = mario.pos.y + mario.curr_frame->h;	//to check fall out and jump on the block
 	int mario_right = mario.pos.x + mario.curr_frame->w -1;
 
 	int mario_down = (mario.pos.y + mario.curr_frame->h - 1 - level.start_y) / block.ground.h;
@@ -388,7 +399,7 @@ int move(mario_t &mario, level_t &level, block_t block, double &time)
 		if (mario.lifes > 0)
 		{
 			mario.lifes--;
-			if (mario.lifes != 0) newGame(mario, level, time);
+			if (mario.lifes != 0) newGame(mario, level, monster, time);
 			return 0;
 		}
 		if(mario.lifes == 0)
@@ -412,13 +423,13 @@ int move(mario_t &mario, level_t &level, block_t block, double &time)
 
 	if (level.time - time > 0)
 	{
-		switch (mario.status)
+		if (decimal % MOVE_SPEED == 0)
 		{
-		case RIGHT:
-			if (mario.pos.x + mario.curr_frame->w == SCREEN_WIDTH) break;
-
-			if (decimal % MOVE_SPEED == 0)
+			switch (mario.status)
 			{
+			case RIGHT:
+				if (mario.pos.x + mario.curr_frame->w == SCREEN_WIDTH) break;
+
 				x = ((mario.pos.x + level.start_x + mario.curr_frame->w) / block.ground.w);
 				if (level.map[mario_up][x] == NOTHING && level.map[mario_down][x] == NOTHING)
 				{
@@ -436,13 +447,10 @@ int move(mario_t &mario, level_t &level, block_t block, double &time)
 					mario.status = META;
 					break;
 				}
-			}
-			break;
-		case LEFT:
-			if (mario.pos.x - 1 < 0) break;
+				break;
+			case LEFT:
+				if (mario.pos.x - 1 < 0) break;
 
-			if (decimal % MOVE_SPEED == 0)
-			{
 				x = (mario.pos.x + level.start_x - 1) / block.ground.w;
 				if (level.map[mario_up][x] == NOTHING && level.map[mario_down][x] == NOTHING)
 				{
@@ -463,14 +471,14 @@ int move(mario_t &mario, level_t &level, block_t block, double &time)
 					mario.status = META;
 					break;
 				}
+				break;
 			}
-			break;
 		}
 	}
 	return 0;
 }
 
-void camera(mario_t &mario, level_t &level, block_t block)
+void camera(mario_t &mario, level_t &level, monster_t monster, block_t block)
 {
 	//right move
 	if (level.w * block.ground.w - level.start_x - 1 != SCREEN_WIDTH)
@@ -478,7 +486,14 @@ void camera(mario_t &mario, level_t &level, block_t block)
 		if (mario.pos.x >= (2 * SCREEN_WIDTH) / 3)
 		{
 			level.start_x++;
-			mario.pos.x -=  1;
+			mario.pos.x--;
+			for (int i = 0; i < monster.num; i++)
+			{
+				if (monster.info[i].turn != MONSTER_DIE)
+				{
+					monster.info[i].pos.x--;
+				}
+			}
 		}
 	}
 	//left move
@@ -487,7 +502,14 @@ void camera(mario_t &mario, level_t &level, block_t block)
 		if (mario.pos.x <= (1 * SCREEN_WIDTH) / 3)
 		{
 			level.start_x--;
-			mario.pos.x += 1;
+			mario.pos.x++;
+			for (int i = 0; i < monster.num; i++)
+			{
+				if (monster.info[i].turn != MONSTER_DIE)
+				{
+					monster.info[i].pos.x++;
+				}
+			}
 		}
 	}
 }
@@ -520,6 +542,66 @@ int load(mario_t &mario, level_t &level, block_t block, monster_t &monster, doub
 	fclose(file);
 
 	return 1;
+}
+
+void monster_move(monster_t &monster, level_t level, block_t block, double time)
+{
+	int decimal = (time * 100) / 1;
+	int x;
+	for (int i = 0; i < monster.num; i++)
+	{
+		int monster_down = (monster.info[i].pos.y + monster.go.h - 1 - level.start_y) / block.ground.h;
+		int monster_up = (monster.info[i].pos.y - level.start_y) / block.ground.h;
+		if (monster_down == level.h)
+			monster_down = level.h - 1;
+		if (decimal % MONSTER_SPEED == 0 && monster.info[i].turn != MONSTER_DIE)
+		{
+			switch (monster.info[i].turn)
+			{
+			case RIGHT:
+				x = ((monster.info[i].pos.x + level.start_x + monster.go.w) / block.ground.w);
+				if (level.map[monster_down][x] == NOTHING)
+				{
+					monster.info[i].pos.x++;
+					break;
+				}
+				else
+				{
+					monster.info[i].turn = LEFT;
+				}
+				break;
+			case LEFT:
+				x = ((monster.info[i].pos.x + level.start_x) / block.ground.w);
+				if (level.map[monster_down][x] == NOTHING && monster.info[i].pos.x - 1 >= 0)
+				{
+					monster.info[i].pos.x--;
+					break;
+				}
+				else
+				{
+					monster.info[i].turn = RIGHT;
+				}
+				break;
+			}
+
+			//fall down
+			int y = (monster.info[i].pos.y + monster.go.h - level.start_y) / block.ground.h;
+			if (y == level.h)
+				y = level.h - 1;
+
+			int right_corner = (monster.info[i].pos.x + level.start_x + monster.go.w - 1) / block.ground.w;
+			int left_corner = (monster.info[i].pos.x + level.start_x) / block.ground.h;
+			if (level.map[y][left_corner] == NOTHING && level.map[y][right_corner] == NOTHING)
+			{
+				monster.info[i].pos.y++;
+			}
+
+			if (monster.info[i].pos.y == SCREEN_HEIGHT - block.ground.h)
+			{
+				monster.info[i].turn = MONSTER_DIE;
+			}
+		}				
+	}
 }
 
 
@@ -713,6 +795,7 @@ int main(int argc, char **argv) {
 			fpsTimer -= 0.5;
 			};
 
+		//pass all levels
 		if (level.curr >= level.all && mario.status == META)
 		{
 			worldTime == level.time;
@@ -721,12 +804,13 @@ int main(int argc, char **argv) {
 			sprintf(text, "Wcisnij n, aby zaczac od nowa lub ESC aby zakonczyc");
 			DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, screen->h / 2 + 15, text, charset);
 		}
-		else if (mario.status == TIME_DIE)	//end time
+		//end time
+		else if (mario.status == TIME_DIE)	
 		{
 			if (mario.lifes > 0)
 			{
 				mario.lifes--;
-				if (mario.lifes != 0) newGame(mario, level, worldTime);
+				if (mario.lifes != 0) newGame(mario, level, monster, worldTime);
 			}
 			else
 			{
@@ -794,7 +878,7 @@ int main(int argc, char **argv) {
 								return 0;
 							}
 						}
-						newGame(mario, level, worldTime);
+						newGame(mario, level, monster, worldTime);
 					}
 					else if (event.key.keysym.sym == SDLK_s)
 					{
@@ -873,9 +957,10 @@ int main(int argc, char **argv) {
 
 		if (mario.status != FALL_OUT_DIE  && mario.status != MONSTER_DIE && mario.status != TIME_DIE)
 		{
-			move(mario, level, block, worldTime);
+			move(mario, level, monster, block, worldTime);
 			jump(mario, level, block, worldTime);
-			camera(mario, level, block);
+			camera(mario, level, monster, block);
+			monster_move(monster, level, block, worldTime);
 		}
 
 		if (mario.status == META && level.curr <= level.all)
@@ -889,7 +974,7 @@ int main(int argc, char **argv) {
 					printf("Blad tworzenia mapy");
 					return 0;
 				}
-				newGame(mario, level, worldTime);
+				newGame(mario, level, monster, worldTime);
 			}
 		}
 		
