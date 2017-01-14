@@ -766,8 +766,8 @@ int main(int argc, char **argv) {
 					printf("Blad tworzenia mapy");
 					return 0;
 				}
+				newGame(mario, level, worldTime);
 			}
-			newGame(mario, level, worldTime);
 		}
 		
 		
