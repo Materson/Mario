@@ -606,7 +606,7 @@ int main(int argc, char **argv) {
 			sprintf(text, "Przeszedles wszystkie etapy!");
 			DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, screen->h / 2, text, charset);
 			sprintf(text, "Wcisnij n, aby zaczac od nowa lub ESC aby zakonczyc");
-			DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, screen->h / 2 + 10, text, charset);
+			DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, screen->h / 2 + 15, text, charset);
 		}
 		else if (level.time - worldTime <= 0)
 		{
@@ -657,9 +657,10 @@ int main(int argc, char **argv) {
 					if(event.key.keysym.sym == SDLK_ESCAPE) quit = 1;
 					else if (event.key.keysym.sym == SDLK_n)
 					{
-						if (level.curr > level.all)
+						if (level.curr > level.all || mario.lifes == 0)
 						{
 							level.curr = 1;
+							mario.lifes = 3;
 							if (!load_map(mario, block, level))
 							{
 								printf("Blad tworzenia mapy");
