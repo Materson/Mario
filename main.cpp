@@ -607,7 +607,6 @@ int main(int argc, char **argv) {
 			}
 			else
 			{
-				DrawRectangle(screen, 4, 4, SCREEN_WIDTH - 8, 36, czerwony, niebieski);
 				sprintf(text, "Pozostaly czas = 0 s  %.0lf klatek / s", fps);
 				int text_len = strlen(text);	//remeber to draw lifes in good position
 				DrawElement(screen, screen->w / 2 - strlen(text) * 8 / 2 - mario.heart.w - 40, 10, mario.heart, mario.sprite);
@@ -623,7 +622,6 @@ int main(int argc, char **argv) {
 		else
 		{
 			// tekst informacyjny
-			DrawRectangle(screen, 4, 4, SCREEN_WIDTH - 8, 36, czerwony, niebieski);
 			sprintf(text, "Pozostaly czas = %.1lf s  %.0lf klatek / s, level - %d/%d", level.time-worldTime, fps, level.curr, level.all);
 			int text_len = strlen(text);	//remeber to draw lifes in good position
 			DrawElement(screen, screen->w / 2 - strlen(text) * 8 / 2 - mario.heart.w - 40, 10, mario.heart, mario.sprite);
@@ -725,7 +723,7 @@ int main(int argc, char **argv) {
 		if (mario.status == META)
 		{
 			if(level.curr < level.all)
-			level.curr++;
+				level.curr++;
 			if (!load_map(mario, block, level))
 			{
 				printf("Blad tworzenia mapy");
