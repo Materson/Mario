@@ -110,9 +110,8 @@ void newGame(mario_t &mario, level_t &level, double &time)
 	mario.curr_frame = &mario.stand_r;
 }
 
-level_t load_map(FILE *file, mario_t &mario, block_t block)
+int load_map(FILE *file, mario_t &mario, block_t block, level_t &level)
 {
-	level_t level;
 	fscanf(file, "%d", &level.w);
 	fscanf(file, "%d", &level.h);
 	fscanf(file, "%d", &level.time);
@@ -122,7 +121,7 @@ level_t load_map(FILE *file, mario_t &mario, block_t block)
 	{
 		printf("Blad przyznania pamieci 1\n");
 		level.error = 1;
-		return level;
+		return 0;
 	}
 	for (int i = 0; i<level.h; i++)
 	{
@@ -131,7 +130,7 @@ level_t load_map(FILE *file, mario_t &mario, block_t block)
 		{
 			printf("Blad przyznania pamieci 2\n");
 			level.error = 1;
-			return level;
+			return 0;
 		}
 	}
 
@@ -161,12 +160,19 @@ level_t load_map(FILE *file, mario_t &mario, block_t block)
 				break;
 			}
 		}
+		if (i == level.h - 1)
+		{
+			mario.pos.x = 0;
+			mario.pos.y = SCREEN_HEIGHT - block.ground.h - 1;
+			mario.start.x = 0;
+			mario.start.y = SCREEN_HEIGHT - block.ground.h - 1;
+		}
 	}
 
 	level.start_y = SCREEN_HEIGHT - (level.h * block.ground.h);
 	level.start_x = 0;
 
-	return level;
+	return 1;
 }
 
 void load_level(SDL_Surface *screen, level_t &level, mario_t &mario, block_t block)
@@ -346,7 +352,7 @@ void camera(mario_t &mario, level_t &level, block_t block)
 	//right move
 	if (level.w * block.ground.w - level.start_x - 1 != SCREEN_WIDTH)
 	{
-		if (mario.pos.x == (2 * SCREEN_WIDTH) / 3)
+		if (mario.pos.x >= (2 * SCREEN_WIDTH) / 3)
 		{
 			level.start_x++;
 			mario.pos.x -=  1;
@@ -363,6 +369,35 @@ void camera(mario_t &mario, level_t &level, block_t block)
 	}
 }
 
+char* file_name(int level)
+{
+	int length = strlen(MAP_NAME);
+	char *name;
+	name = (char*)malloc((length + 6) * sizeof(char));
+	strcpy(name, MAP_NAME);
+	char number[3];
+	sprintf(number, "%02d", level);
+	strcat(strcat(name, number), ".map");
+
+	return name;
+}
+
+int level_number()
+{
+	int i = 1;
+	char *name = file_name(i);
+	while (FILE *file = fopen(name, "r"))
+	{
+		fclose(file);
+		i++;
+		free(name);
+		name = file_name(i);
+	}
+	free(name);
+
+	return i-1;
+}
+
 // main
 #ifdef __cplusplus
 extern "C"
@@ -377,8 +412,6 @@ int main(int argc, char **argv) {
 	SDL_Renderer *renderer;
 	block_t block;
 	mario_t mario;
-
-	mario.curr_frame = &mario.stand_r;
 
 
 	if(SDL_Init(SDL_INIT_EVERYTHING) != 0) {
@@ -486,10 +519,24 @@ int main(int argc, char **argv) {
 
 	//map
 	level_t level;
-	FILE *file = fopen("map1.map", "r");
-	level = load_map(file, mario, block);
-	if (level.error == 1)
+	level.all = level_number();
+	if (level.all == 0)
 	{
+		printf("Brak plikow z mapami");
+		return 0;
+	}
+	char *name = file_name(level.curr);
+	FILE *file = fopen(name, "r");
+	free(name);
+	if (file == NULL)
+	{
+		printf("Blad otwarcia pliku");
+		return 0;
+	}
+
+	if (!load_map(file, mario, block, level))
+	{
+		printf("Blad przy ladowaniu mapy");
 		return 0;
 	}
 	fclose(file);	
@@ -568,7 +615,7 @@ int main(int argc, char **argv) {
 			DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, 10, text, charset);
 			sprintf(text, "x%d", mario.lifes);
 			DrawString(screen, screen->w / 2 - text_len * 8 / 2 - mario.heart.w - 25, 10, text, charset);
-			sprintf(text, "Esc - wyjscie, n - nowa gra, znak - ");
+			sprintf(text, "Esc - wyjscie, n - nowa gra, level - %d", level.all);
 			DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, 26, text, charset);
 		}
 

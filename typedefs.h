@@ -5,6 +5,8 @@
 #define JUMP_HIGH 25
 #define JUMP_SPEED 4
 
+#define MAP_NAME "map"
+
 typedef enum
 {
 	NOTHING,
@@ -69,4 +71,5 @@ typedef struct
 	element_t **map;
 	int error = 0;
 	int time;
+	int curr = 1, all;
 }level_t;
