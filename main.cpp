@@ -125,7 +125,7 @@ char* file_name(int level)
 	return name;
 }
 
-int load_map( mario_t &mario, block_t block, level_t &level)
+int load_map( mario_t &mario, block_t block, monster_t &monster, level_t &level)
 {
 	char *name = file_name(level.curr);
 	FILE *file = fopen(name, "r");
@@ -159,7 +159,8 @@ int load_map( mario_t &mario, block_t block, level_t &level)
 		}
 	}
 
-	//fill map
+	//fill map and count monsters
+	int monster_num = 0;
 	while (!feof(file))
 	{
 		for (int i = 0; i < level.h; i++)
@@ -167,10 +168,39 @@ int load_map( mario_t &mario, block_t block, level_t &level)
 			for (int j = 0; j < level.w; j++)
 			{
 				fscanf(file, "%d", &level.map[i][j]);
+				if (level.map[i][j] == MONSTER)
+				{
+					monster_num++;
+				}
 			}
 		}
 	}
 	fclose(file);
+	monster.num = monster_num;
+
+	//create monsters
+	monster.info = (monster_info*)malloc(monster.num * sizeof(monster_info));
+	if (monster.info == NULL)
+	{
+		printf("Blad tworzenia potworow\n");
+		level.error = 1;
+		return 0;
+	}
+	//monsters start position
+	int k = 0;
+	for (int i = 0; i < level.h; i++)
+	{
+		for (int j = 0; j < level.w; j++)
+		{
+			if (level.map[i][j] == MONSTER)
+			{
+				monster.info[k].pos.x = j*block.ground.w + 1;
+				monster.info[k].pos.y = SCREEN_HEIGHT - (level.h - i)*block.ground.h;
+				level.map[i][j] = NOTHING;
+				k++;
+			}
+		}
+	}
 
 	level.start_y = SCREEN_HEIGHT - (level.h * block.ground.h);
 	level.start_x = 0;
@@ -205,7 +235,7 @@ int load_map( mario_t &mario, block_t block, level_t &level)
 	return 1;
 }
 
-void load_level(SDL_Surface *screen, level_t &level, mario_t &mario, block_t block)
+void load_level(SDL_Surface *screen, level_t level, mario_t mario, block_t block, monster_t monster)
 {
 	int start_x = 0, start_y = level.start_y;
 
@@ -231,6 +261,12 @@ void load_level(SDL_Surface *screen, level_t &level, mario_t &mario, block_t blo
 		}
 		start_y += block.ground.h;
 	}
+	//draw monsters
+	for (int i = 0; i < monster.num; i++)
+	{
+		DrawElement(screen, monster.info[i].pos.x - level.start_x, monster.info[i].pos.y, monster.go, monster.sprite);
+	}
+
 	//draw mario
 	DrawElement(screen, mario.pos.x, mario.pos.y, *mario.curr_frame, mario.sprite);
 }
@@ -456,14 +492,14 @@ void camera(mario_t &mario, level_t &level, block_t block)
 	}
 }
 
-void save(mario_t mario, level_t level, double time)
+void save(mario_t mario, level_t level, monster_t monster, double time)
 {
 	FILE *file = fopen("save.txt", "w");
 	fprintf(file, "%d %.2f %d %d %d %d %d", level.curr, time, mario.pos.x, mario.pos.y, mario.lifes, mario.start_jump, mario.end_jump);
 	fclose(file);
 }
 
-int load(mario_t &mario, level_t &level, block_t block, double &time)
+int load(mario_t &mario, level_t &level, block_t block, monster_t &monster, double &time)
 {
 	int curr_level = level.curr;
 	FILE *file = fopen("save.txt", "r");
@@ -474,7 +510,7 @@ int load(mario_t &mario, level_t &level, block_t block, double &time)
 	}
 
 	fscanf(file, "%d", &level.curr);
-	if (!load_map(mario, block, level))
+	if (!load_map(mario, block, monster, level))
 	{
 		printf("Blad tworzenia mapy");
 		level.curr = curr_level;
@@ -501,6 +537,7 @@ int main(int argc, char **argv) {
 	SDL_Renderer *renderer;
 	block_t block;
 	mario_t mario;
+	monster_t monster;
 
 
 	if(SDL_Init(SDL_INIT_EVERYTHING) != 0) {
@@ -563,6 +600,17 @@ int main(int argc, char **argv) {
 		return 1;
 	};
 
+	monster.sprite = SDL_LoadBMP("./monster_sprite.bmp");
+	if (block.sprite == NULL) {
+		printf("SDL_LoadBMP(monster_sprite.bmp) error: %s\n", SDL_GetError());
+		SDL_FreeSurface(screen);
+		SDL_DestroyTexture(scrtex);
+		SDL_DestroyWindow(window);
+		SDL_DestroyRenderer(renderer);
+		SDL_Quit();
+		return 1;
+	};
+
 	mario.sprite = SDL_LoadBMP("./mario_sheet.bmp");
 	if (mario.sprite == NULL) {
 		printf("SDL_LoadBMP(mario_sheet.bmp) error: %s\n", SDL_GetError());
@@ -615,7 +663,7 @@ int main(int argc, char **argv) {
 		return 0;
 	}
 
-	if (!load_map(mario, block, level))
+	if (!load_map(mario, block, monster, level))
 	{
 		printf("Blad przy ladowaniu mapy");
 		return 0;
@@ -645,7 +693,7 @@ int main(int argc, char **argv) {
 		distance += 10 * delta;
 
 		SDL_FillRect(screen, NULL, niebieski);
-		load_level(screen, level, mario, block);
+		load_level(screen, level, mario, block, monster);
 
 		//rysuj eti
 		/*DrawSurface(screen, eti,
@@ -740,7 +788,7 @@ int main(int argc, char **argv) {
 						{
 							level.curr = 1;
 							mario.lifes = 3;
-							if (!load_map(mario, block, level))
+							if (!load_map(mario, block, monster, level))
 							{
 								printf("Blad tworzenia mapy");
 								return 0;
@@ -750,11 +798,11 @@ int main(int argc, char **argv) {
 					}
 					else if (event.key.keysym.sym == SDLK_s)
 					{
-						save(mario, level, worldTime);
+						save(mario, level, monster, worldTime);
 					}
 					else if (event.key.keysym.sym == SDLK_l)
 					{
-						load(mario, level, block, worldTime);
+						load(mario, level, block, monster, worldTime);
 					}
 					else if (event.key.keysym.sym == SDLK_RIGHT && level.curr <= level.all)
 					{
@@ -836,7 +884,7 @@ int main(int argc, char **argv) {
 				level.curr++;
 			if (level.curr <= level.all)
 			{
-				if (!load_map(mario, block, level))
+				if (!load_map(mario, block, monster, level))
 				{
 					printf("Blad tworzenia mapy");
 					return 0;

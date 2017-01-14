@@ -13,7 +13,8 @@ typedef enum
 	MARIO,
 	GROUND,
 	PLATFORM,
-	STAR
+	STAR,
+	MONSTER
 }element_t;
 
 typedef enum
@@ -36,11 +37,11 @@ typedef struct
 
 typedef struct
 {
+	SDL_Surface *sprite;
 	SDL_Rect ground = { 0,0,16,16 };	//x,y - location in file, width, height
 	SDL_Rect platform = { 16,0,16,16 };
 	SDL_Rect check = { 32,0,16,16 };
 	SDL_Rect star = { 48,0,16,16 };
-	SDL_Surface *sprite;
 }block_t;
 
 typedef struct
@@ -75,3 +76,17 @@ typedef struct
 	int time;
 	int curr = 1, all;
 }level_t;
+
+typedef struct
+{
+	pos_t pos;
+	status_t turn = LEFT;
+}monster_info;
+
+typedef struct
+{
+	SDL_Surface *sprite;
+	SDL_Rect go = { 0, 0, 16, 16 };
+	monster_info *info;
+	int num;
+}monster_t;
