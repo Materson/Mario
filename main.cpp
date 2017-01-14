@@ -263,32 +263,33 @@ void jump(mario_t &mario, level_t level, block_t block, double time)
 		y = 0;
 	}
 
-	if (level.time - time > 0)
+	if (level.map[y][left_corner] == NOTHING && level.map[y][right_corner] == NOTHING)
 	{
-		if (level.map[y][left_corner] == NOTHING && level.map[y][right_corner] == NOTHING)
+		if (mario.start_jump > 0 && !mario.end_jump && decimal % JUMP_SPEED == 0)
 		{
-			if (mario.start_jump > 0 && !mario.end_jump && decimal % JUMP_SPEED == 0)
-			{
-				mario.pos.y--;
-				mario.start_jump++;
-				if (mario.start_jump == JUMP_HIGH) mario.end_jump = 1;
-			}
-
-		}
-		else 
-		{
-			mario.end_jump = 1;
+			mario.pos.y--;
+			mario.start_jump++;
+			if (mario.start_jump == JUMP_HIGH) mario.end_jump = 1;
 		}
 
-		if (level.map[y][left_corner] == STAR || level.map[y][right_corner] == STAR)
-		{
-			mario.status = META;
-		}
 	}
+	else 
+	{
+		mario.end_jump = 1;
+	}
+	//touch bottom star
+	if (level.map[y][left_corner] == STAR || level.map[y][right_corner] == STAR)
+	{
+		mario.status = META;
+	}
+	
 
 	//fall down
 	y = (mario.pos.y + mario.curr_frame->h - level.start_y) / block.ground.h;
-	if (decimal % MOVE_SPEED == 0)
+	if (y == level.h)
+		y = level.h - 1;
+
+	if (decimal % MOVE_SPEED == 0 && mario.status != FALL_OUT_DIE)
 	{
 		right_corner = (mario.pos.x + level.start_x + mario.curr_frame->w - 1) / block.ground.w;
 		left_corner = (mario.pos.x + level.start_x) / block.ground.h;
@@ -314,15 +315,16 @@ void jump(mario_t &mario, level_t level, block_t block, double time)
 				mario.curr_frame = &mario.stand_r;
 			}
 		}
-
+		//touch top start
 		if (level.map[y][left_corner] == STAR || level.map[y][right_corner] == STAR)
 		{
 			mario.status = META;
 		}
 	}
+
 }
 
-void move(mario_t &mario, level_t level, block_t block, double time)
+int move(mario_t &mario, level_t level, block_t block, double &time)
 {
 	int x, y;
 	int decimal = (time * 100) / 1;
@@ -342,6 +344,22 @@ void move(mario_t &mario, level_t level, block_t block, double time)
 	if (mario_up < 0)
 	{
 		mario_up = 0;
+	}
+
+	//mario fall out
+	if (mario_bottom >= SCREEN_HEIGHT)
+	{
+		if (mario.lifes > 0)
+		{
+			mario.lifes--;
+			if (mario.lifes != 0) newGame(mario, level, time);
+			return 0;
+		}
+		if(mario.lifes == 0)
+		{
+			mario.status = FALL_OUT_DIE;
+			return 0;
+		}
 	}
 
 	x = ((mario.pos.x + level.start_x + mario.curr_frame->w + 1) / block.ground.w);
@@ -413,6 +431,7 @@ void move(mario_t &mario, level_t level, block_t block, double time)
 			break;
 		}
 	}
+	return 0;
 }
 
 void camera(mario_t &mario, level_t &level, block_t block)
@@ -620,6 +639,8 @@ int main(int argc, char **argv) {
 		t1 = t2;
 
 		worldTime += delta;
+		if (level.time - worldTime <= 0)
+			mario.status = TIME_DIE;
 
 		distance += 10 * delta;
 
@@ -652,7 +673,7 @@ int main(int argc, char **argv) {
 			sprintf(text, "Wcisnij n, aby zaczac od nowa lub ESC aby zakonczyc");
 			DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, screen->h / 2 + 15, text, charset);
 		}
-		else if (level.time - worldTime <= 0)
+		else if (mario.status == TIME_DIE)	//end time
 		{
 			if (mario.lifes > 0)
 			{
@@ -672,6 +693,20 @@ int main(int argc, char **argv) {
 				sprintf(text, "Wcisnij n, aby rozpoczac nowa gre lub ESC aby zakonczyc");
 				DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, screen->h / 2, text, charset);
 			}
+		}
+		else if (mario.status == MONSTER_DIE)
+		{
+
+		}
+		else if (mario.status == FALL_OUT_DIE)
+		{
+			sprintf(text, "x%d", mario.lifes);
+			DrawElement(screen, screen->w / 2 - strlen(text) * 8 / 2 - mario.heart.w - 40, 10, mario.heart, mario.sprite);
+			DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2 - mario.heart.w - 25, 10, text, charset);
+			sprintf(text, "MARIO MIAL LEK WYSOKOSCI");
+			DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, 26, text, charset);
+			sprintf(text, "Wcisnij n, aby rozpoczac nowa gre lub ESC aby zakonczyc");
+			DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, screen->h / 2, text, charset);
 		}
 		else
 		{
@@ -779,7 +814,7 @@ int main(int argc, char **argv) {
 						mario.key.left = 0;
 					}
 
-					if(!mario.key.left && !mario.key.right && !mario.key.up && mario.status != META)
+					if(!mario.key.left && !mario.key.right && !mario.key.up && (mario.status == LEFT || mario.status == RIGHT))
 						mario.status = STAND;
 					break;
 				case SDL_QUIT:
@@ -788,10 +823,12 @@ int main(int argc, char **argv) {
 				};
 			};
 
-		
-		jump(mario, level, block, worldTime);
-		move(mario, level, block, worldTime);
-		camera(mario, level, block);
+		if (mario.status != FALL_OUT_DIE  && mario.status != MONSTER_DIE && mario.status != TIME_DIE)
+		{
+			move(mario, level, block, worldTime);
+			jump(mario, level, block, worldTime);
+			camera(mario, level, block);
+		}
 
 		if (mario.status == META && level.curr <= level.all)
 		{

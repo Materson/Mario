@@ -21,7 +21,10 @@ typedef enum
 	STAND,
 	LEFT,
 	RIGHT,
-	META
+	META,
+	MONSTER_DIE,
+	TIME_DIE,
+	FALL_OUT_DIE
 }status_t;
 
 typedef struct
