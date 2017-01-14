@@ -275,14 +275,23 @@ void jump(mario_t &mario, level_t level, block_t block, double time)
 			}
 
 		}
+		else 
+		{
+			mario.end_jump = 1;
+		}
+
+		if (level.map[y][left_corner] == STAR || level.map[y][right_corner] == STAR)
+		{
+			mario.status = META;
+		}
 	}
 
 	//fall down
 	y = (mario.pos.y + mario.curr_frame->h - level.start_y) / block.ground.h;
 	if (decimal % MOVE_SPEED == 0)
 	{
-		int right_corner = (mario.pos.x + level.start_x + mario.curr_frame->w - 1) / block.ground.w;
-		int left_corner = (mario.pos.x + level.start_x) / block.ground.h;
+		right_corner = (mario.pos.x + level.start_x + mario.curr_frame->w - 1) / block.ground.w;
+		left_corner = (mario.pos.x + level.start_x) / block.ground.h;
 
 		if (level.map[y][left_corner] == NOTHING && level.map[y][right_corner] == NOTHING)
 		{
@@ -304,6 +313,11 @@ void jump(mario_t &mario, level_t level, block_t block, double time)
 			{
 				mario.curr_frame = &mario.stand_r;
 			}
+		}
+
+		if (level.map[y][left_corner] == STAR || level.map[y][right_corner] == STAR)
+		{
+			mario.status = META;
 		}
 	}
 }
