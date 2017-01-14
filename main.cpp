@@ -517,7 +517,11 @@ void camera(mario_t &mario, level_t &level, monster_t monster, block_t block)
 void save(mario_t mario, level_t level, monster_t monster, double time)
 {
 	FILE *file = fopen("save.txt", "w");
-	fprintf(file, "%d %d %.2f %d %d %d %d %d", level.curr, level.start_x, time, mario.pos.x, mario.pos.y, mario.lifes, mario.start_jump, mario.end_jump);
+	fprintf(file, "%d %d %.2f %d %d %d %d %d \n", level.curr, level.start_x, time, mario.pos.x, mario.pos.y, mario.lifes, mario.start_jump, mario.end_jump);
+	for (int i = 0; i < monster.num; i++)
+	{
+		fprintf(file, "%d %d %d ", monster.info[i].pos.x, monster.info[i].pos.y, monster.info[i].turn);
+	}
 	fclose(file);
 }
 
@@ -539,6 +543,10 @@ int load(mario_t &mario, level_t &level, block_t block, monster_t &monster, doub
 		return 0;
 	}
 	fscanf(file, "%d %lf %d %d %d %d %d",&level.start_x, &time, &mario.pos.x, &mario.pos.y, &mario.lifes, &mario.start_jump, &mario.end_jump);
+	for (int i = 0; i < monster.num; i++)
+	{
+		fscanf(file, "%d %d %d", &monster.info[i].pos.x, &monster.info[i].pos.y, &monster.info[i].turn);
+	}
 	fclose(file);
 
 	return 1;
