@@ -110,12 +110,35 @@ void newGame(mario_t &mario, level_t &level, double &time)
 	mario.curr_frame = &mario.stand_r;
 }
 
-int load_map(FILE *file, mario_t &mario, block_t block, level_t &level)
+char* file_name(int level)
 {
+	int length = strlen(MAP_NAME);
+	char *name;
+	name = (char*)malloc((length + 6) * sizeof(char));
+	strcpy(name, MAP_NAME);
+	char number[3];
+	sprintf(number, "%02d", level);
+	strcat(strcat(name, number), ".map");
+
+	return name;
+}
+
+int load_map( mario_t &mario, block_t block, level_t &level)
+{
+	char *name = file_name(level.curr);
+	FILE *file = fopen(name, "r");
+	free(name);
+	if (file == NULL)
+	{
+		printf("Blad otwarcia pliku");
+		return 0;
+	}
+
 	fscanf(file, "%d", &level.w);
 	fscanf(file, "%d", &level.h);
 	fscanf(file, "%d", &level.time);
-	//create matrix
+
+	//create map
 	level.map = (element_t **)malloc(level.h*level.w * sizeof(element_t));
 	if (level.map == NULL)
 	{
@@ -134,6 +157,7 @@ int load_map(FILE *file, mario_t &mario, block_t block, level_t &level)
 		}
 	}
 
+	//fill map
 	while (!feof(file))
 	{
 		for (int i = 0; i < level.h; i++)
@@ -144,6 +168,10 @@ int load_map(FILE *file, mario_t &mario, block_t block, level_t &level)
 			}
 		}
 	}
+	fclose(file);
+
+	level.start_y = SCREEN_HEIGHT - (level.h * block.ground.h);
+	level.start_x = 0;
 
 	//mario start position
 	for (int i = 0; i < level.h; i++)
@@ -157,11 +185,13 @@ int load_map(FILE *file, mario_t &mario, block_t block, level_t &level)
 				mario.pos.x = mario.start.x;
 				mario.pos.y = mario.start.y;
 				level.map[i][j] = NOTHING;
-				break;
+				return 1;
 			}
 		}
+		//if mario doesn't exist
 		if (i == level.h - 1)
 		{
+			mario.error = 1;
 			mario.pos.x = 0;
 			mario.pos.y = SCREEN_HEIGHT - block.ground.h - 1;
 			mario.start.x = 0;
@@ -169,8 +199,6 @@ int load_map(FILE *file, mario_t &mario, block_t block, level_t &level)
 		}
 	}
 
-	level.start_y = SCREEN_HEIGHT - (level.h * block.ground.h);
-	level.start_x = 0;
 
 	return 1;
 }
@@ -187,18 +215,14 @@ void load_level(SDL_Surface *screen, level_t &level, mario_t &mario, block_t blo
 		{
 			switch (level.map[i][j])
 			{
-			case NOTHING:
-
-				break;
 			case GROUND:
 				DrawElement(screen, start_x - level.start_x, start_y, block.ground, block.sprite);
 				break;
 			case PLATFORM:
 				DrawElement(screen, start_x - level.start_x, start_y, block.platform, block.sprite);
 				break;
-			case CHECK:
-				DrawElement(screen, start_x - level.start_x, start_y, block.check, block.sprite);
-				level.map[i][j] = PLATFORM;
+			case STAR:
+				DrawElement(screen, start_x - level.start_x, start_y, block.star, block.sprite);
 				break;
 			}
 			start_x += block.ground.w;
@@ -207,6 +231,22 @@ void load_level(SDL_Surface *screen, level_t &level, mario_t &mario, block_t blo
 	}
 	//draw mario
 	DrawElement(screen, mario.pos.x, mario.pos.y, *mario.curr_frame, mario.sprite);
+}
+
+int level_number()
+{
+	int i = 1;
+	char *name = file_name(i);
+	while (FILE *file = fopen(name, "r"))
+	{
+		fclose(file);
+		i++;
+		free(name);
+		name = file_name(i);
+	}
+	free(name);
+
+	return i - 1;
 }
 
 void jump(mario_t &mario, level_t level, block_t block, double time)
@@ -320,6 +360,12 @@ void move(mario_t &mario, level_t level, block_t block, double time)
 					mario.pos.x++;
 					break;
 				}
+
+				if (level.map[mario_up][x] == STAR || level.map[mario_down][x] == STAR)
+				{
+					mario.status = META;
+					break;
+				}
 			}
 			break;
 		case LEFT:
@@ -340,6 +386,12 @@ void move(mario_t &mario, level_t level, block_t block, double time)
 						mario.pos.x--;
 						break;
 					}
+				}
+
+				if (level.map[mario_up][x] == STAR || level.map[mario_down][x] == STAR)
+				{
+					mario.status = META;
+					break;
 				}
 			}
 			break;
@@ -369,34 +421,6 @@ void camera(mario_t &mario, level_t &level, block_t block)
 	}
 }
 
-char* file_name(int level)
-{
-	int length = strlen(MAP_NAME);
-	char *name;
-	name = (char*)malloc((length + 6) * sizeof(char));
-	strcpy(name, MAP_NAME);
-	char number[3];
-	sprintf(number, "%02d", level);
-	strcat(strcat(name, number), ".map");
-
-	return name;
-}
-
-int level_number()
-{
-	int i = 1;
-	char *name = file_name(i);
-	while (FILE *file = fopen(name, "r"))
-	{
-		fclose(file);
-		i++;
-		free(name);
-		name = file_name(i);
-	}
-	free(name);
-
-	return i-1;
-}
 
 // main
 #ifdef __cplusplus
@@ -525,21 +549,12 @@ int main(int argc, char **argv) {
 		printf("Brak plikow z mapami");
 		return 0;
 	}
-	char *name = file_name(level.curr);
-	FILE *file = fopen(name, "r");
-	free(name);
-	if (file == NULL)
-	{
-		printf("Blad otwarcia pliku");
-		return 0;
-	}
 
-	if (!load_map(file, mario, block, level))
+	if (!load_map(mario, block, level))
 	{
 		printf("Blad przy ladowaniu mapy");
 		return 0;
 	}
-	fclose(file);	
 
 	frames = 0;
 	fpsTimer = 0;
@@ -609,13 +624,13 @@ int main(int argc, char **argv) {
 		{
 			// tekst informacyjny
 			DrawRectangle(screen, 4, 4, SCREEN_WIDTH - 8, 36, czerwony, niebieski);
-			sprintf(text, "Pozostaly czas = %.1lf s  %.0lf klatek / s", level.time-worldTime, fps);
+			sprintf(text, "Pozostaly czas = %.1lf s  %.0lf klatek / s, level - %d/%d", level.time-worldTime, fps, level.curr, level.all);
 			int text_len = strlen(text);	//remeber to draw lifes in good position
 			DrawElement(screen, screen->w / 2 - strlen(text) * 8 / 2 - mario.heart.w - 40, 10, mario.heart, mario.sprite);
 			DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, 10, text, charset);
 			sprintf(text, "x%d", mario.lifes);
 			DrawString(screen, screen->w / 2 - text_len * 8 / 2 - mario.heart.w - 25, 10, text, charset);
-			sprintf(text, "Esc - wyjscie, n - nowa gra, level - %d", level.all);
+			sprintf(text, "Esc - wyjscie, n - nowa gra");
 			DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, 26, text, charset);
 		}
 
@@ -706,6 +721,18 @@ int main(int argc, char **argv) {
 		jump(mario, level, block, worldTime);
 		move(mario, level, block, worldTime);
 		camera(mario, level, block);
+
+		if (mario.status == META)
+		{
+			if(level.curr < level.all)
+			level.curr++;
+			if (!load_map(mario, block, level))
+			{
+				printf("Blad tworzenia mapy");
+				return 0;
+			}
+			newGame(mario, level, worldTime);
+		}
 		
 		
 		frames++;
