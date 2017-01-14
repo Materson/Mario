@@ -360,7 +360,7 @@ void jump(mario_t &mario, level_t level, block_t block, double time)
 
 }
 
-int move(mario_t &mario, level_t level, block_t block, double &time)
+int move(mario_t &mario, level_t &level, block_t block, double &time)
 {
 	int x, y;
 	int decimal = (time * 100) / 1;
@@ -484,7 +484,7 @@ void camera(mario_t &mario, level_t &level, block_t block)
 	//left move
 	if (level.start_x != 0)
 	{
-		if (mario.pos.x == (1 * SCREEN_WIDTH) / 3)
+		if (mario.pos.x <= (1 * SCREEN_WIDTH) / 3)
 		{
 			level.start_x--;
 			mario.pos.x += 1;
