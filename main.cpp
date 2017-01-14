@@ -108,6 +108,8 @@ void newGame(mario_t &mario, level_t &level, double &time)
 	mario.end_jump = 0;
 	level.start_x = 0;
 	mario.curr_frame = &mario.stand_r;
+	if(level.curr <= level.all)
+		mario.status = STAND;
 }
 
 char* file_name(int level)
@@ -598,7 +600,15 @@ int main(int argc, char **argv) {
 			fpsTimer -= 0.5;
 			};
 
-		if (level.time - worldTime <= 0)
+		if (level.curr >= level.all && mario.status == META)
+		{
+			worldTime == level.time;
+			sprintf(text, "Przeszedles wszystkie etapy!");
+			DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, screen->h / 2, text, charset);
+			sprintf(text, "Wcisnij n, aby zaczac od nowa lub ESC aby zakonczyc");
+			DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, screen->h / 2 + 10, text, charset);
+		}
+		else if (level.time - worldTime <= 0)
 		{
 			if (mario.lifes > 0)
 			{
@@ -634,6 +644,7 @@ int main(int argc, char **argv) {
 
 
 
+
 		SDL_UpdateTexture(scrtex, NULL, screen->pixels, screen->pitch);
 //		SDL_RenderClear(renderer);
 		SDL_RenderCopy(renderer, scrtex, NULL, NULL);
@@ -646,9 +657,18 @@ int main(int argc, char **argv) {
 					if(event.key.keysym.sym == SDLK_ESCAPE) quit = 1;
 					else if (event.key.keysym.sym == SDLK_n)
 					{
+						if (level.curr > level.all)
+						{
+							level.curr = 1;
+							if (!load_map(mario, block, level))
+							{
+								printf("Blad tworzenia mapy");
+								return 0;
+							}
+						}
 						newGame(mario, level, worldTime);
 					}
-					else if (event.key.keysym.sym == SDLK_RIGHT)
+					else if (event.key.keysym.sym == SDLK_RIGHT && level.curr <= level.all)
 					{
 						mario.key.right = 1;
 						mario.status = RIGHT;
@@ -662,7 +682,7 @@ int main(int argc, char **argv) {
 							mario.curr_frame = &mario.jump_r;
 						}
 					}
-					else if (event.key.keysym.sym == SDLK_LEFT)
+					else if (event.key.keysym.sym == SDLK_LEFT  && level.curr <= level.all)
 					{
 						mario.key.left = 1;
 						mario.status = LEFT;
@@ -676,7 +696,7 @@ int main(int argc, char **argv) {
 							mario.curr_frame = &mario.jump_l;
 						}
 					}
-					else if (event.key.keysym.sym == SDLK_UP)
+					else if (event.key.keysym.sym == SDLK_UP  && level.curr <= level.all)
 					{
 						if (mario.start_jump == 0)
 						{
@@ -706,7 +726,7 @@ int main(int argc, char **argv) {
 						mario.key.left = 0;
 					}
 
-					if(!mario.key.left && !mario.key.right && !mario.key.up)
+					if(!mario.key.left && !mario.key.right && !mario.key.up && mario.status != META)
 						mario.status = STAND;
 					break;
 				case SDL_QUIT:
@@ -720,14 +740,17 @@ int main(int argc, char **argv) {
 		move(mario, level, block, worldTime);
 		camera(mario, level, block);
 
-		if (mario.status == META)
+		if (mario.status == META && level.curr <= level.all)
 		{
-			if(level.curr < level.all)
+			if(level.curr <= level.all)
 				level.curr++;
-			if (!load_map(mario, block, level))
+			if (level.curr <= level.all)
 			{
-				printf("Blad tworzenia mapy");
-				return 0;
+				if (!load_map(mario, block, level))
+				{
+					printf("Blad tworzenia mapy");
+					return 0;
+				}
 			}
 			newGame(mario, level, worldTime);
 		}
