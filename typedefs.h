@@ -62,10 +62,6 @@ typedef struct
 	int start_jump = 0, end_jump = 0;
 	int lifes = 3;
 	int error = 0;
-	/*
-	SDL_Rect go_l
-	SDL_Rect go_r
-	*/
 }mario_t;
 
 typedef struct

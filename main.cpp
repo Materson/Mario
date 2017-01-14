@@ -437,6 +437,36 @@ void camera(mario_t &mario, level_t &level, block_t block)
 	}
 }
 
+void save(mario_t mario, level_t level, double time)
+{
+	FILE *file = fopen("save.txt", "w");
+	fprintf(file, "%d %.2f %d %d %d %d %d", level.curr, time, mario.pos.x, mario.pos.y, mario.lifes, mario.start_jump, mario.end_jump);
+	fclose(file);
+}
+
+int load(mario_t &mario, level_t &level, block_t block, double &time)
+{
+	int curr_level = level.curr;
+	FILE *file = fopen("save.txt", "r");
+	if (file == NULL)
+	{
+		printf("Brak pliku zapisu");
+		return 0;
+	}
+
+	fscanf(file, "%d", &level.curr);
+	if (!load_map(mario, block, level))
+	{
+		printf("Blad tworzenia mapy");
+		level.curr = curr_level;
+		return 0;
+	}
+	fscanf(file, "%lf %d %d %d %d %d", &time, &mario.pos.x, &mario.pos.y, &mario.lifes, &mario.start_jump, &mario.end_jump);
+	fclose(file);
+
+	return 1;
+}
+
 
 // main
 #ifdef __cplusplus
@@ -682,6 +712,14 @@ int main(int argc, char **argv) {
 							}
 						}
 						newGame(mario, level, worldTime);
+					}
+					else if (event.key.keysym.sym == SDLK_s)
+					{
+						save(mario, level, worldTime);
+					}
+					else if (event.key.keysym.sym == SDLK_l)
+					{
+						load(mario, level, block, worldTime);
 					}
 					else if (event.key.keysym.sym == SDLK_RIGHT && level.curr <= level.all)
 					{
