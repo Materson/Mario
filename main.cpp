@@ -859,7 +859,7 @@ int main(int argc, char **argv) {
 			DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, 10, text, charset);
 			sprintf(text, "x%d", mario.lifes);
 			DrawString(screen, screen->w / 2 - text_len * 8 / 2 - mario.heart.w - 25, 10, text, charset);
-			sprintf(text, "Esc - wyjscie, n - nowa gra");
+			sprintf(text, "Esc - wyjscie, n - nowa gra, s - zapisz, l - wczytaj");
 			DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, 26, text, charset);
 		}
 
@@ -901,7 +901,7 @@ int main(int argc, char **argv) {
 						mario.status = STAND;
 						break;
 					}
-					else if (event.key.keysym.sym == SDLK_RIGHT && level.curr <= level.all)
+					else if (event.key.keysym.sym == SDLK_RIGHT)
 					{
 						mario.key.right = 1;
 						if (mario.status != META && mario.status != TIME_DIE)
@@ -916,7 +916,7 @@ int main(int argc, char **argv) {
 							mario.curr_frame = &mario.jump_r;
 						}
 					}
-					else if (event.key.keysym.sym == SDLK_LEFT  && level.curr <= level.all)
+					else if (event.key.keysym.sym == SDLK_LEFT)
 					{
 						mario.key.left = 1;
 						if (mario.status != META && mario.status != TIME_DIE)
@@ -931,7 +931,7 @@ int main(int argc, char **argv) {
 							mario.curr_frame = &mario.jump_l;
 						}
 					}
-					else if (event.key.keysym.sym == SDLK_UP  && level.curr <= level.all)
+					else if (event.key.keysym.sym == SDLK_UP)
 					{
 						if (mario.start_jump == 0)
 						{
@@ -961,7 +961,7 @@ int main(int argc, char **argv) {
 						mario.key.left = 0;
 					}
 
-					if(!mario.key.left && !mario.key.right && !mario.key.up && (mario.status == LEFT || mario.status == RIGHT))
+					if(!mario.key.left && !mario.key.right && (mario.status == LEFT || mario.status == RIGHT))
 						mario.status = STAND;
 					break;
 				case SDL_QUIT:
