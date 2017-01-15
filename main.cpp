@@ -311,62 +311,64 @@ void jump(mario_t &mario, level_t level, block_t block, double time)
 	{
 		y = 0;
 	}
-
-	if (level.map[y][left_corner] == NOTHING && level.map[y][right_corner] == NOTHING)
+	if (decimal % JUMP_SPEED == 0 && mario.status != META)
 	{
-		if (mario.start_jump > 0 && !mario.end_jump && decimal % JUMP_SPEED == 0)
-		{
-			mario.pos.y--;
-			mario.start_jump++;
-			if (mario.start_jump == JUMP_HIGH) mario.end_jump = 1;
-		}
-
-	}
-	else 
-	{
-		mario.end_jump = 1;
-	}
-	//touch top star
-	if (level.map[y][left_corner] == STAR || level.map[y][right_corner] == STAR)
-	{
-		mario.status = META;
-	}
-	
-
-	//fall down
-	y = (mario.pos.y + mario.curr_frame->h - level.start_y) / block.ground.h;
-	if (y == level.h)
-		y = level.h - 1;
-	if (decimal % MOVE_SPEED == 0 && mario.status != FALL_OUT_DIE)
-	{
-		right_corner = (mario.pos.x + level.start_x + mario.curr_frame->w - 1) / block.ground.w;
-		left_corner = (mario.pos.x + level.start_x) / block.ground.h;
-
 		if (level.map[y][left_corner] == NOTHING && level.map[y][right_corner] == NOTHING)
 		{
-			if (mario.end_jump == 1 || mario.start_jump == 0)
+			if (mario.start_jump > 0 && !mario.end_jump)
 			{
-				mario.end_jump = 1;
-				mario.pos.y++;
+				mario.pos.y--;
+				mario.start_jump++;
+				if (mario.start_jump == JUMP_HIGH) mario.end_jump = 1;
 			}
+
 		}
 		else
 		{
-			mario.start_jump = 0;
-			mario.end_jump = 0;
-			if (mario.curr_frame == &mario.jump_l)
-			{
-				mario.curr_frame = &mario.stand_l;
-			}
-			else if (mario.curr_frame == &mario.jump_r)
-			{
-				mario.curr_frame = &mario.stand_r;
-			}
+			mario.end_jump = 1;
 		}
-		//touch bottom start
+		//touch top star
 		if (level.map[y][left_corner] == STAR || level.map[y][right_corner] == STAR)
 		{
 			mario.status = META;
+		}
+
+
+		//fall down
+		y = (mario.pos.y + mario.curr_frame->h - level.start_y) / block.ground.h;
+		if (y == level.h)
+			y = level.h - 1;
+		if (decimal % MOVE_SPEED == 0 && mario.status != FALL_OUT_DIE)
+		{
+			right_corner = (mario.pos.x + level.start_x + mario.curr_frame->w - 1) / block.ground.w;
+			left_corner = (mario.pos.x + level.start_x) / block.ground.h;
+
+			if (level.map[y][left_corner] == NOTHING && level.map[y][right_corner] == NOTHING)
+			{
+				if (mario.end_jump == 1 || mario.start_jump == 0)
+				{
+					mario.end_jump = 1;
+					mario.pos.y++;
+				}
+			}
+			else
+			{
+				mario.start_jump = 0;
+				mario.end_jump = 0;
+				if (mario.curr_frame == &mario.jump_l)
+				{
+					mario.curr_frame = &mario.stand_l;
+				}
+				else if (mario.curr_frame == &mario.jump_r)
+				{
+					mario.curr_frame = &mario.stand_r;
+				}
+			}
+			//touch bottom start
+			if (level.map[y][left_corner] == STAR || level.map[y][right_corner] == STAR)
+			{
+				mario.status = META;
+			}
 		}
 	}
 
