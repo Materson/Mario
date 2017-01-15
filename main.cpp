@@ -173,7 +173,8 @@ int load_map( mario_t &mario, block_t block, monster_t &monster, level_t &level)
 		{
 			for (int j = 0; j < level.w; j++)
 			{
-				fscanf(file, "%d", &level.map[i][j]);
+				fscanf(file, "%1d", &level.map[i][j]);
+
 				if (level.map[i][j] == MONSTER)
 				{
 					monster_num++;
@@ -182,7 +183,7 @@ int load_map( mario_t &mario, block_t block, monster_t &monster, level_t &level)
 		}
 	}
 	fclose(file);
-	monster.num = monster_num;
+	monster.num = monster_num/2;
 
 	//create monsters
 	monster.info = (monster_info*)malloc(monster.num * sizeof(monster_info));
