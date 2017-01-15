@@ -1,9 +1,9 @@
 #define SCREEN_WIDTH	740
 #define SCREEN_HEIGHT	480
 
-#define MOVE_SPEED 4
-#define JUMP_HIGH 25
-#define JUMP_SPEED 4
+#define MOVE_SPEED 120
+#define JUMP_HIGH 30
+#define JUMP_SPEED 120
 
 #define MONSTER_SPEED 5
 
@@ -48,8 +48,8 @@ typedef struct
 
 typedef struct
 {
-	int x;
-	int y;
+	double x;
+	double y;
 }pos_t;
 
 typedef struct
@@ -65,7 +65,8 @@ typedef struct
 	pos_t start;
 	key_t key;
 	status_t status = STAND;
-	int start_jump = 0, end_jump = 0;
+	double start_jump = 0;
+	int end_jump = 0;
 	int lifes = 3;
 	int error = 0;
 }mario_t;
