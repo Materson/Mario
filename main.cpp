@@ -281,7 +281,10 @@ void load_level(SDL_Surface *screen, level_t level, mario_t mario, block_t block
 	}
 
 	//draw mario
-	DrawElement(screen, mario.pos.x, mario.pos.y, *mario.curr_frame, mario.sprite);
+	if (mario.status != FALL_OUT_DIE)
+	{
+		DrawElement(screen, mario.pos.x, mario.pos.y, *mario.curr_frame, mario.sprite);
+	}
 }
 
 int level_number()
