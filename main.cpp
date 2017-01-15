@@ -565,9 +565,9 @@ void monster_move(monster_t &monster, mario_t mario, level_t level, block_t bloc
 	{
 		int monster_down = (monster.info[i].pos.y + monster.go.h - 1 - level.start_y) / block.ground.h;
 		int monster_up = (monster.info[i].pos.y - level.start_y) / block.ground.h;
-		if (monster_down == level.h)
+		if (monster_down >= level.h)
 			monster_down = level.h - 1;
-		if (decimal % MONSTER_SPEED == 0 && monster.info[i].turn != MONSTER_DIE && mario.status != META)
+		if (monster.info[i].turn != MONSTER_DIE && mario.status != META)
 		{
 			switch (monster.info[i].turn)
 			{
@@ -575,7 +575,7 @@ void monster_move(monster_t &monster, mario_t mario, level_t level, block_t bloc
 				x = ((monster.info[i].pos.x + level.start_x + monster.go.w) / block.ground.w);
 				if (level.map[monster_down][x] == NOTHING)
 				{
-					monster.info[i].pos.x++;
+					monster.info[i].pos.x += time*MONSTER_SPEED;
 					break;
 				}
 				else
@@ -587,7 +587,7 @@ void monster_move(monster_t &monster, mario_t mario, level_t level, block_t bloc
 				x = ((monster.info[i].pos.x + level.start_x) / block.ground.w);
 				if (level.map[monster_down][x] == NOTHING && monster.info[i].pos.x - 1 >= 0)
 				{
-					monster.info[i].pos.x--;
+					monster.info[i].pos.x -= time*MONSTER_SPEED;
 					break;
 				}
 				else
@@ -599,14 +599,14 @@ void monster_move(monster_t &monster, mario_t mario, level_t level, block_t bloc
 
 			//fall down
 			int y = (monster.info[i].pos.y + monster.go.h - level.start_y) / block.ground.h;
-			if (y == level.h)
+			if (y >= level.h)
 				y = level.h - 1;
 
 			int right_corner = (monster.info[i].pos.x + level.start_x + monster.go.w - 1) / block.ground.w;
 			int left_corner = (monster.info[i].pos.x + level.start_x) / block.ground.h;
 			if (level.map[y][left_corner] == NOTHING && level.map[y][right_corner] == NOTHING)
 			{
-				monster.info[i].pos.y++;
+				monster.info[i].pos.y += time*MONSTER_SPEED;
 			}
 
 			if (monster.info[i].pos.y == SCREEN_HEIGHT - block.ground.h)
@@ -976,7 +976,7 @@ int main(int argc, char **argv) {
 			move(mario, level, monster, block, delta);
 			jump(mario, level, block, delta);
 			camera(mario, level, monster, block);
-			monster_move(monster, mario, level, block, worldTime);
+			monster_move(monster, mario, level, block, delta);
 		}
 
 		if (mario.status == META && level.curr <= level.all)

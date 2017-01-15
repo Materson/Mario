@@ -5,7 +5,7 @@
 #define JUMP_HIGH 30
 #define JUMP_SPEED 120
 
-#define MONSTER_SPEED 5
+#define MONSTER_SPEED 60
 
 #define MAP_NAME "map"
 
