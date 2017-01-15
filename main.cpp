@@ -306,7 +306,7 @@ int level_number()
 void jump(mario_t &mario, level_t level, block_t block, double time)
 {
 	int decimal = (time * 100) / 1;
-	int y = (mario.pos.y - level.start_y - 1) / block.platform.h;
+	int y = (mario.pos.y - level.start_y) / block.platform.h;
 	int left_corner = (mario.pos.x + level.start_x) / block.platform.w;
 	int right_corner = (mario.pos.x + level.start_x + mario.curr_frame->w - 1) / block.ground.w;
 
@@ -381,7 +381,7 @@ int move(mario_t &mario, level_t &level, monster_t &monster, block_t block, doub
 {
 	int x;
 	int decimal = (time * 100) / 1;
-	int mario_bottom = mario.pos.y + mario.curr_frame->h;	//to check fall out and jump on the block
+	int mario_bottom = mario.pos.y + mario.curr_frame->h + 1;	//to check fall out and jump on the block
 	int mario_right = mario.pos.x + mario.curr_frame->w -1;
 
 	int mario_down = (mario.pos.y + mario.curr_frame->h - 1 - level.start_y) / block.ground.h;
@@ -428,54 +428,54 @@ int move(mario_t &mario, level_t &level, monster_t &monster, block_t block, doub
 	}
 
 		
-			switch (mario.status)
+	switch (mario.status)
+	{
+	case RIGHT:
+		if (mario.pos.x + mario.curr_frame->w == SCREEN_WIDTH) break;
+
+		x = ((mario.pos.x + level.start_x + mario.curr_frame->w) / block.ground.w);
+		if (level.map[mario_up][x] == NOTHING && level.map[mario_down][x] == NOTHING)
+		{
+			mario.pos.x += time*MOVE_SPEED;
+			break;
+		}
+		else if (mario_bottom <= block_up_wall)
+		{
+			mario.pos.x += time*MOVE_SPEED;
+			break;
+		}
+
+		if (level.map[mario_up][x] == STAR || level.map[mario_down][x] == STAR)
+		{
+			mario.status = META;
+			break;
+		}
+		break;
+	case LEFT:
+		if (mario.pos.x - 1 < 0) break;
+
+		x = (mario.pos.x + level.start_x - 1) / block.ground.w;
+		if (level.map[mario_up][x] == NOTHING && level.map[mario_down][x] == NOTHING)
+		{
+			mario.pos.x -= time*MOVE_SPEED;
+			break;
+		}
+		else
+		{
+			if (mario_bottom <= block_up_wall)
 			{
-			case RIGHT:
-				if (mario.pos.x + mario.curr_frame->w == SCREEN_WIDTH) break;
-
-				x = ((mario.pos.x + level.start_x + mario.curr_frame->w) / block.ground.w);
-				if (level.map[mario_up][x] == NOTHING && level.map[mario_down][x] == NOTHING)
-				{
-					mario.pos.x += time*MOVE_SPEED;
-					break;
-				}
-				else if (mario_bottom < block_up_wall)
-				{
-					mario.pos.x += time*MOVE_SPEED;
-					break;
-				}
-
-				if (level.map[mario_up][x] == STAR || level.map[mario_down][x] == STAR)
-				{
-					mario.status = META;
-					break;
-				}
-				break;
-			case LEFT:
-				if (mario.pos.x - 1 < 0) break;
-
-				x = (mario.pos.x + level.start_x - 1) / block.ground.w;
-				if (level.map[mario_up][x] == NOTHING && level.map[mario_down][x] == NOTHING)
-				{
-					mario.pos.x -= time*MOVE_SPEED;
-					break;
-				}
-				else
-				{
-					if (mario_bottom < block_up_wall)
-					{
-						mario.pos.x -= time*MOVE_SPEED;
-						break;
-					}
-				}
-
-				if (level.map[mario_up][x] == STAR || level.map[mario_down][x] == STAR)
-				{
-					mario.status = META;
-					break;
-				}
+				mario.pos.x -= time*MOVE_SPEED;
 				break;
 			}
+		}
+
+		if (level.map[mario_up][x] == STAR || level.map[mario_down][x] == STAR)
+		{
+			mario.status = META;
+			break;
+		}
+		break;
+	}
 		
 	return 0;
 }
