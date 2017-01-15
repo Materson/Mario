@@ -431,7 +431,7 @@ int move(mario_t &mario, level_t &level, monster_t &monster, block_t block, doub
 	switch (mario.status)
 	{
 	case RIGHT:
-		if (mario.pos.x + mario.curr_frame->w == SCREEN_WIDTH) break;
+		if (mario.pos.x + mario.curr_frame->w >= SCREEN_WIDTH) break;
 
 		x = ((mario.pos.x + level.start_x + mario.curr_frame->w) / block.ground.w);
 		if (level.map[mario_up][x] == NOTHING && level.map[mario_down][x] == NOTHING)
