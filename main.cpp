@@ -552,7 +552,7 @@ int load(mario_t &mario, level_t &level, block_t block, monster_t &monster, doub
 	return 1;
 }
 
-void monster_move(monster_t &monster, level_t level, block_t block, double time)
+void monster_move(monster_t &monster, mario_t mario, level_t level, block_t block, double time)
 {
 	int decimal = (time * 100) / 1;
 	int x;
@@ -562,7 +562,7 @@ void monster_move(monster_t &monster, level_t level, block_t block, double time)
 		int monster_up = (monster.info[i].pos.y - level.start_y) / block.ground.h;
 		if (monster_down == level.h)
 			monster_down = level.h - 1;
-		if (decimal % MONSTER_SPEED == 0 && monster.info[i].turn != MONSTER_DIE)
+		if (decimal % MONSTER_SPEED == 0 && monster.info[i].turn != MONSTER_DIE && mario.status != META)
 		{
 			switch (monster.info[i].turn)
 			{
@@ -971,7 +971,7 @@ int main(int argc, char **argv) {
 			move(mario, level, monster, block, worldTime);
 			jump(mario, level, block, worldTime);
 			camera(mario, level, monster, block);
-			monster_move(monster, level, block, worldTime);
+			monster_move(monster, mario, level, block, worldTime);
 		}
 
 		if (mario.status == META && level.curr <= level.all)
