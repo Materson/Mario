@@ -106,7 +106,9 @@ copy /y "$(ProjectDir)*.bmp" $(OutDir)"</Command>
     </Image>
   </ItemGroup>
   <ItemGroup>
-    <None Include="map1.map" />
+    <None Include="map01.map" />
+    <None Include="map02.map" />
+    <None Include="map03.map" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

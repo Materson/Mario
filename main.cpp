@@ -427,8 +427,6 @@ int move(mario_t &mario, level_t &level, monster_t &monster, block_t block, doub
 		}
 	}
 
-	if (level.time - time > 0)
-	{
 		
 			switch (mario.status)
 			{
@@ -479,7 +477,6 @@ int move(mario_t &mario, level_t &level, monster_t &monster, block_t block, doub
 				break;
 			}
 		
-	}
 	return 0;
 }
 
@@ -907,7 +904,8 @@ int main(int argc, char **argv) {
 					else if (event.key.keysym.sym == SDLK_RIGHT && level.curr <= level.all)
 					{
 						mario.key.right = 1;
-						mario.status = RIGHT;
+						if (mario.status != META && mario.status != TIME_DIE)
+							mario.status = RIGHT;
 
 						if (mario.start_jump == 0)
 						{
@@ -921,7 +919,8 @@ int main(int argc, char **argv) {
 					else if (event.key.keysym.sym == SDLK_LEFT  && level.curr <= level.all)
 					{
 						mario.key.left = 1;
-						mario.status = LEFT;
+						if (mario.status != META && mario.status != TIME_DIE)
+							mario.status = LEFT;
 
 						if (mario.start_jump == 0)
 						{
