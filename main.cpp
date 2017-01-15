@@ -554,7 +554,7 @@ int load(mario_t &mario, level_t &level, block_t block, monster_t &monster, doub
 	return 1;
 }
 
-void monster_move(monster_t &monster, mario_t mario, level_t level, block_t block, double time)
+void monster_move(monster_t &monster, mario_t &mario, level_t level, block_t block, double time)
 {
 	int decimal = (time * 100) / 1;
 	int x;
@@ -564,8 +564,9 @@ void monster_move(monster_t &monster, mario_t mario, level_t level, block_t bloc
 		int monster_up = (monster.info[i].pos.y - level.start_y) / block.ground.h;
 		if (monster_down >= level.h)
 			monster_down = level.h - 1;
-		if (monster.info[i].turn != MONSTER_DIE && mario.status != META)
+		if (monster.info[i].turn != MONSTER_DIE)
 		{
+
 			switch (monster.info[i].turn)
 			{
 			case RIGHT:
@@ -594,6 +595,7 @@ void monster_move(monster_t &monster, mario_t mario, level_t level, block_t bloc
 				break;
 			}
 
+
 			//fall down
 			int y = (monster.info[i].pos.y + monster.go.h - level.start_y) / block.ground.h;
 			if (y >= level.h)
@@ -606,9 +608,25 @@ void monster_move(monster_t &monster, mario_t mario, level_t level, block_t bloc
 				monster.info[i].pos.y += time*MONSTER_SPEED;
 			}
 
-			if (monster.info[i].pos.y == SCREEN_HEIGHT - block.ground.h)
+			if (monster.info[i].pos.y >= SCREEN_HEIGHT - block.ground.h)
 			{
 				monster.info[i].turn = MONSTER_DIE;
+			}
+
+			//mario touch monster
+			double monster_left = monster.info[i].pos.x;
+			double monster_top = monster.info[i].pos.y;
+			double monster_bottom = monster.info[i].pos.y + monster.go.h - 1;
+			double monster_right = monster.info[i].pos.x + monster.go.w - 1;
+
+			double mario_left = mario.pos.x;
+			double mario_top = mario.pos.y;
+			double mario_bottom = mario.pos.y + mario.curr_frame->h - 1;
+			double mario_right = mario.pos.x + mario.curr_frame->w - 1;
+
+			if (mario_right >= monster_left && mario_left <= monster_right && (mario_bottom >= monster_top && mario_top <= monster_bottom))
+			{
+				mario.status = MONSTER_DIE;
 			}
 		}				
 	}
@@ -836,9 +854,24 @@ int main(int argc, char **argv) {
 				DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, screen->h / 2, text, charset);
 			}
 		}
+		//monster die
 		else if (mario.status == MONSTER_DIE)
 		{
-
+			if (mario.lifes > 0)
+			{
+				mario.lifes--;
+				if (mario.lifes != 0) newGame(mario, level, monster, worldTime);
+			}
+			else
+			{
+				sprintf(text, "x%d", mario.lifes);
+				DrawElement(screen, screen->w / 2 - strlen(text) * 8 / 2 - mario.heart.w - 40, 10, mario.heart, mario.sprite);
+				DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2 - mario.heart.w - 25, 10, text, charset);
+				sprintf(text, "ZOSTALES OTRUTY PRZEZ GRZYBY");
+				DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, 26, text, charset);
+				sprintf(text, "Wcisnij n, aby rozpoczac nowa gre lub ESC aby zakonczyc");
+				DrawString(screen, screen->w / 2 - strlen(text) * 8 / 2, screen->h / 2, text, charset);
+			}
 		}
 		else if (mario.status == FALL_OUT_DIE)
 		{
