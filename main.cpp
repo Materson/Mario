@@ -891,10 +891,13 @@ int main(int argc, char **argv) {
 					else if (event.key.keysym.sym == SDLK_s)
 					{
 						save(mario, level, monster, worldTime);
+						break;
 					}
 					else if (event.key.keysym.sym == SDLK_l)
 					{
 						load(mario, level, block, monster, worldTime);
+						mario.status = STAND;
+						break;
 					}
 					else if (event.key.keysym.sym == SDLK_RIGHT && level.curr <= level.all)
 					{
